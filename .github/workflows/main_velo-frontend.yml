@@ -23,13 +23,8 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
-        run: |
-          cd app
-          npm install
-          npx prisma generate
-          npm run build --if-present
-          npm run test --if-present
+      - name: Skip local build and let Azure Oryx build it
+        run: echo "Skipping local build. Azure will build it."
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
