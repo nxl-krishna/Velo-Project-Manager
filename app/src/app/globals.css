@@ -1,0 +1,437 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Linear/Notion Light Theme */
+  --brand-50: #f8fafc;
+  --brand-100: #f1f5f9;
+  --brand-200: #e2e8f0;
+  --brand-400: #64748b;
+  --brand-500: #111827; /* Primary black/slate */
+  --brand-600: #000000;
+  --brand-700: #000000;
+  --brand-900: #000000;
+
+  /* Neutral */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --gray-950: #030712;
+
+  /* Semantic */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* Surface */
+  --surface-bg: #ffffff;
+  --surface-1: #f9fafb; /* Sidebar / Off-white */
+  --surface-2: #ffffff; /* Cards / Main */
+  --surface-3: #f3f4f6; /* Hover states */
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+
+  /* Blur/Glass */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.05);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px; /* Linear style smaller crisp font */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--surface-bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+/* ─── Selection ─────────────────────────────────────── */
+::selection { background: var(--gray-200); color: var(--text-primary); }
+
+/* ─── Focus ring ────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+}
+
+/* ─── Kanban board ──────────────────────────────────── */
+.board-container {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-height: calc(100vh - 160px);
+  align-items: flex-start;
+}
+
+.kanban-column {
+  flex: 0 0 320px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kanban-column-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.kanban-column-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+}
+
+/* ─── Task card ─────────────────────────────────────── */
+.task-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  cursor: grab;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.task-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.task-card:active { cursor: grabbing; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+
+/* ─── Priority indicators ───────────────────────────── */
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.priority-LOW    { background: var(--gray-400); }
+.priority-MEDIUM { background: var(--info); }
+.priority-HIGH   { background: var(--warning); }
+.priority-CRITICAL { background: var(--danger); }
+
+/* ─── Buttons ───────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--brand-500);
+  color: white;
+}
+.btn-primary:hover { background: var(--brand-600); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-secondary:hover { background: var(--surface-1); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-ghost:hover { background: var(--surface-3); color: var(--text-primary); }
+
+.btn-danger {
+  background: white;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger:hover { background: #fef2f2; }
+
+.btn-sm { padding: 4px 8px; font-size: 0.8125rem; }
+.btn-lg { padding: 10px 20px; font-size: 1rem; border-radius: 8px; }
+
+/* ─── Form inputs ───────────────────────────────────── */
+.input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;
+}
+
+.input:focus {
+  border-color: var(--info);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+.input::placeholder { color: var(--text-muted); }
+
+.label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* ─── Cards ─────────────────────────────────────────── */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ─── Badges ────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.badge-brand  { background: var(--gray-100); color: var(--text-primary); border-color: var(--border); }
+.badge-green  { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.badge-yellow { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.badge-red    { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.badge-gray   { background: var(--gray-100); color: var(--text-secondary); border-color: var(--border); }
+
+/* ─── Avatar ────────────────────────────────────────── */
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  border: 2px solid var(--surface-bg);
+}
+
+.avatar-sm { width: 20px; height: 20px; font-size: 0.625rem; }
+.avatar-lg { width: 36px; height: 36px; font-size: 0.875rem; }
+
+.avatar-group { display: flex; }
+.avatar-group .avatar { margin-left: -6px; }
+.avatar-group .avatar:first-child { margin-left: 0; }
+
+/* ─── Sidebar ───────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.sidebar-item:hover { background: var(--gray-200); color: var(--text-primary); }
+.sidebar-item.active { background: var(--gray-200); color: var(--text-primary); font-weight: 600; }
+
+/* ─── Header / Topbar ───────────────────────────────── */
+.topbar {
+  height: 52px;
+  background: var(--surface-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+/* ─── Skeleton loading ──────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Modal overlay ─────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal {
+  background: var(--surface-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Progress bar ──────────────────────────────────── */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--brand-500);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ─── Stats card ────────────────────────────────────── */
+.stat-card {
+  background: var(--surface-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ─── Drag-and-drop states ──────────────────────────── */
+.drag-over .kanban-column-body {
+  background: var(--surface-3);
+  border: 2px dashed var(--gray-400);
+}
+
+.task-card.dragging {
+  opacity: 0.7;
+  transform: rotate(2deg) scale(1.02);
+  cursor: grabbing;
+}

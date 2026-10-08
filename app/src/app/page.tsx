@@ -1,0 +1,234 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function HomePage() {
+  const router = useRouter();
+
+  return (
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      {/* Hero Section */}
+      <header style={{
+        background: "linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%)",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Animated background orbs */}
+        <div style={{
+          position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none",
+        }}>
+          <div style={{
+            position: "absolute", top: "-20%", left: "60%",
+            width: "600px", height: "600px",
+            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
+            borderRadius: "50%",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-30%", left: "-10%",
+            width: "500px", height: "500px",
+            background: "radial-gradient(circle, rgba(192,132,252,0.1) 0%, transparent 70%)",
+            borderRadius: "50%",
+          }} />
+        </div>
+
+        {/* Nav */}
+        <nav style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "20px 48px", position: "relative", zIndex: 10,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{
+              width: 36, height: 36, background: "var(--brand-500)",
+              borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "1.25rem",
+            }}>⬡</div>
+            <span style={{ fontWeight: 700, fontSize: "1.125rem" }}>ProjectHub</span>
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <Link href="/auth/login" className="btn btn-ghost">Sign in</Link>
+            <Link href="/auth/register" className="btn btn-primary">Get started free</Link>
+          </div>
+        </nav>
+
+        {/* Hero content */}
+        <div style={{
+          textAlign: "center", padding: "80px 24px 100px",
+          position: "relative", zIndex: 10,
+        }}>
+          <div className="badge badge-brand" style={{ margin: "0 auto 24px", display: "inline-flex" }}>
+            ✨ AI-Powered Project Management
+          </div>
+          <h1 style={{
+            fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            marginBottom: "24px",
+            maxWidth: "800px",
+            margin: "0 auto 24px",
+          }}>
+            Ship faster with{" "}
+            <span className="gradient-text">AI-assisted</span>
+            {" "}project intelligence
+          </h1>
+          <p style={{
+            fontSize: "1.25rem",
+            color: "var(--text-secondary)",
+            maxWidth: "600px",
+            margin: "0 auto 40px",
+            lineHeight: 1.7,
+          }}>
+            Kanban boards, sprint planning, smart task assignment, and deadline prediction — all in one beautiful workspace.
+          </p>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/auth/register" className="btn btn-primary btn-lg">
+              Start for free →
+            </Link>
+            <Link href="#features" className="btn btn-secondary btn-lg">
+              See how it works
+            </Link>
+          </div>
+          <p style={{ marginTop: "16px", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+            No credit card required · Free forever for small teams
+          </p>
+        </div>
+      </header>
+
+      {/* Feature grid */}
+      <section id="features" style={{ padding: "80px 48px", background: "var(--surface-bg)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <h2 style={{ textAlign: "center", fontSize: "2.25rem", fontWeight: 700, marginBottom: "16px" }}>
+            Everything your team needs
+          </h2>
+          <p style={{ textAlign: "center", color: "var(--text-secondary)", marginBottom: "56px", fontSize: "1.125rem" }}>
+            Built for engineering teams who move fast
+          </p>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "20px",
+          }}>
+            {FEATURES.map((f) => (
+              <div key={f.title} className="card card-hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ fontSize: "2rem" }}>{f.icon}</div>
+                <h3 style={{ fontWeight: 600, fontSize: "1.125rem" }}>{f.title}</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", lineHeight: 1.6 }}>
+                  {f.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats section */}
+      <section style={{
+        padding: "60px 48px",
+        background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(192,132,252,0.05))",
+        borderTop: "1px solid var(--border)",
+        borderBottom: "1px solid var(--border)",
+      }}>
+        <div style={{
+          maxWidth: 900, margin: "0 auto",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "32px", textAlign: "center",
+        }}>
+          {STATS.map((s) => (
+            <div key={s.label}>
+              <div className="gradient-text" style={{ fontSize: "2.5rem", fontWeight: 800 }}>{s.value}</div>
+              <div style={{ color: "var(--text-secondary)", marginTop: "4px" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding: "80px 24px", textAlign: "center" }}>
+        <h2 style={{ fontSize: "2.25rem", fontWeight: 700, marginBottom: "16px" }}>
+          Ready to transform how you work?
+        </h2>
+        <p style={{ color: "var(--text-secondary)", marginBottom: "32px", fontSize: "1.125rem" }}>
+          Join teams shipping 40% faster with AI-powered workflows
+        </p>
+        <Link href="/auth/register" className="btn btn-primary btn-lg">
+          Create your workspace →
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer style={{
+        borderTop: "1px solid var(--border)",
+        padding: "24px 48px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        color: "var(--text-muted)",
+        fontSize: "0.875rem",
+      }}>
+        <span>© 2025 ProjectHub. Built with ❤️ and Next.js</span>
+        <div style={{ display: "flex", gap: "24px" }}>
+          <Link href="/api/health" style={{ color: "inherit", textDecoration: "none" }}>API Status</Link>
+          <Link href="#" style={{ color: "inherit", textDecoration: "none" }}>Privacy</Link>
+          <Link href="#" style={{ color: "inherit", textDecoration: "none" }}>Terms</Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+const FEATURES = [
+  {
+    icon: "🗂️",
+    title: "Kanban Boards",
+    description: "Drag-and-drop tasks across fully customizable columns with real-time sync across your team.",
+  },
+  {
+    icon: "🤖",
+    title: "AI Task Intelligence",
+    description: "Automatically summarize tasks, suggest the best assignee, and predict deadlines from historical data.",
+  },
+  {
+    icon: "⚡",
+    title: "Sprint Planning",
+    description: "Plan sprints with AI recommendations. Track velocity, burndown, and team workload in real time.",
+  },
+  {
+    icon: "🔒",
+    title: "Role-Based Access",
+    description: "Granular RBAC with Admins, Managers, and Members. Keep sensitive data secure across teams.",
+  },
+  {
+    icon: "📊",
+    title: "Analytics & Reports",
+    description: "Sprint burndowns, workload views, and project progress dashboards. Make data-driven decisions.",
+  },
+  {
+    icon: "🔔",
+    title: "Smart Notifications",
+    description: "Get alerted on due dates, mentions, and status changes via in-app and email notifications.",
+  },
+  {
+    icon: "🧠",
+    title: "Natural Language Tasks",
+    description: "Type a sentence, get a fully structured task. AI parses priority, assignees, and due dates automatically.",
+  },
+  {
+    icon: "🌐",
+    title: "Multi-Organization",
+    description: "Manage multiple companies or clients from a single account with isolated workspaces.",
+  },
+  {
+    icon: "📈",
+    title: "Prometheus Metrics",
+    description: "Built-in /health and /metrics endpoints for production monitoring with your existing observability stack.",
+  },
+];
+
+const STATS = [
+  { value: "10x", label: "Faster onboarding" },
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "<200ms", label: "API response P95" },
+  { value: "∞", label: "Scalability" },
+];
