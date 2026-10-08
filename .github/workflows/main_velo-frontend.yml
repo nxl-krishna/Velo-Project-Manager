@@ -25,7 +25,9 @@ jobs:
 
       - name: npm install, build, and test
         run: |
+          cd app
           npm install
+          npx prisma generate
           npm run build --if-present
           npm run test --if-present
 
@@ -33,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: app
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,4 +64,3 @@ jobs:
           app-name: 'velo-frontend'
           slot-name: 'Production'
           package: .
-          
