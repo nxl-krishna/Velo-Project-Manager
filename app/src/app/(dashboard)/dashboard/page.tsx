@@ -29,31 +29,37 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [stats] = useState<Stats>({ totalProjects: 0, totalTasks: 0, inProgress: 0, overdue: 0 });
+  const [stats, setStats] = useState<any>({ totalProjects: 0, totalTasks: 0, inProgress: 0, teamMembers: 0 });
+  const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    fetch("/api/projects", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.data) setProjects(d.data);
+    
+    Promise.all([
+      fetch("/api/projects", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch("/api/dashboard", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+    ])
+      .then(([projectsData, dashboardData]) => {
+        if (projectsData.data) setProjects(projectsData.data);
+        if (dashboardData.data) {
+          if (dashboardData.data.stats) setStats(dashboardData.data.stats);
+          if (dashboardData.data.insights) setInsights(dashboardData.data.insights);
+        }
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch projects", err);
+        console.error("Failed to fetch dashboard data", err);
         setLoading(false);
       });
   }, []);
 
   const STAT_CARDS = [
-    { label: "Total Projects", value: "4", icon: "📁", change: "+2 this month", color: "var(--brand-400)" },
-    { label: "Open Tasks", value: "83", icon: "✓", change: "12 due today", color: "var(--info)" },
-    { label: "In Progress", value: "21", icon: "⚡", change: "5 critical priority", color: "var(--warning)" },
-    { label: "Team Members", value: "8", icon: "👥", change: "Across 3 orgs", color: "var(--success)" },
+    { label: "Total Projects", value: stats.totalProjects.toString(), icon: "📁", change: "Active across orgs", color: "var(--brand-400)" },
+    { label: "Open Tasks", value: stats.totalTasks.toString(), icon: "✓", change: "Needs attention", color: "var(--info)" },
+    { label: "In Progress", value: stats.inProgress.toString(), icon: "⚡", change: "Currently active", color: "var(--warning)" },
+    { label: "Team Members", value: stats.teamMembers.toString(), icon: "👥", change: "Collaborators", color: "var(--success)" },
   ];
 
   return (
@@ -89,7 +95,7 @@ export default function DashboardPage() {
               Good morning! 👋
             </h1>
             <p style={{ color: "var(--text-secondary)" }}>
-              You have <strong style={{ color: "var(--warning)" }}>12 tasks</strong> due today and <strong style={{ color: "var(--brand-400)" }}>3 sprints</strong> ending this week.
+              You have <strong style={{ color: "var(--warning)" }}>{stats.totalTasks} active tasks</strong> across <strong style={{ color: "var(--brand-400)" }}>{stats.totalProjects} projects</strong>.
             </p>
           </div>
           <div style={{ fontSize: "3rem" }}></div>
@@ -159,10 +165,10 @@ export default function DashboardPage() {
 
         {/* AI Panel */}
         <div style={{ marginTop: 32 }}>
-          <h2 style={{ fontWeight: 600, fontSize: "1.125rem", marginBottom: 16 }}>AI Insights</h2>
+          <h2 style={{ fontWeight: 600, fontSize: "1.125rem", marginBottom: 16 }}>AI Insights (Powered by Gemini)</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-            {AI_INSIGHTS.map((insight) => (
-              <div key={insight.title} className="ai-card">
+            {insights.map((insight, idx) => (
+              <div key={idx} className="ai-card">
                 <div style={{ fontWeight: 600, marginBottom: 6, fontSize: "0.9375rem" }}>{insight.title}</div>
                 <div style={{ color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>{insight.body}</div>
                 <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, padding: "6px 0", color: "var(--brand-400)" }}>
@@ -170,6 +176,9 @@ export default function DashboardPage() {
                 </button>
               </div>
             ))}
+            {loading && insights.length === 0 && (
+              <div style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Generating insights with Gemini...</div>
+            )}
           </div>
         </div>
       </div>
@@ -252,20 +261,3 @@ function NewProjectModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-const AI_INSIGHTS = [
-  {
-    title: "📋 Sprint overload detected",
-    body: "Sprint 4 has 62 story points assigned to Jane — 40% above her historical velocity. Consider rebalancing.",
-    action: "View sprint",
-  },
-  {
-    title: "⏰ 3 deadlines at risk",
-    body: "Based on current velocity, tasks 'Auth module', 'API docs', and 'Dashboard tests' are unlikely to complete on time.",
-    action: "See predictions",
-  },
-  {
-    title: "🎯 Suggested assignee",
-    body: "Bob has the lowest workload this sprint and has completed 4 similar backend tasks recently.",
-    action: "Assign task",
-  },
-];
