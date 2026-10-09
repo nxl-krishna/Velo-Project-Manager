@@ -41,7 +41,7 @@ Status: ${task.status}`;
 Write a 1-sentence explanation of why they are a good fit. Be creative but realistic. Format: "🎯 Suggested: [Name] - [Reason]"`;
     }
 
-    const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`, {
+    const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
