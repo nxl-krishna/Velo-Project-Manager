@@ -85,7 +85,7 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext) => {
       return error("BAD_REQUEST", "Project name is required", 400, requestId);
     }
 
-    // Get user's first org or create a default one
+    let orgId = "";
     let orgMembership = await prisma.orgMember.findFirst({
       where: { userId: ctx.user.userId }
     });
@@ -103,7 +103,9 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext) => {
           }
         }
       });
-      orgMembership = { orgId: org.id } as any;
+      orgId = org.id;
+    } else {
+      orgId = orgMembership.orgId;
     }
 
     const project = await prisma.project.create({
@@ -111,7 +113,7 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext) => {
         name: body.name,
         description: body.description || null,
         status: body.status || "PLANNING",
-        orgId: orgMembership.orgId,
+        orgId: orgId,
         ownerId: ctx.user.userId,
         members: {
           create: {

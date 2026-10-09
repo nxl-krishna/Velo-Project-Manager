@@ -102,25 +102,25 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
 
 
     // Connect to custom Next.js server with Socket.io
-    socket = io(window.location.origin);
+    // socket = io(window.location.origin);
     
-    socket.on("connect", () => {
-      console.log("[WebSocket] Connected:", socket.id);
-      socket.emit("join-project", projectId);
-    });
+    // socket.on("connect", () => {
+    //   console.log("[WebSocket] Connected:", socket.id);
+    //   socket.emit("join-project", projectId);
+    // });
 
-    socket.on("project-event", (event: any) => {
-      console.log("[WebSocket] Received real-time event:", event);
-      if (event.type === "BOARD_UPDATED") {
-        // Here we would ideally refetch the board data or optimally merge `event.moves`
-        console.log("Task moved by another user!", event.moves);
-      }
-    });
+    // socket.on("project-event", (event: any) => {
+    //   console.log("[WebSocket] Received real-time event:", event);
+    //   if (event.type === "BOARD_UPDATED") {
+    //     // Here we would ideally refetch the board data or optimally merge `event.moves`
+    //     console.log("Task moved by another user!", event.moves);
+    //   }
+    // });
 
-    return () => {
-      socket.emit("leave-project", projectId);
-      socket.disconnect();
-    };
+    // return () => {
+    //   socket.emit("leave-project", projectId);
+    //   socket.disconnect();
+    // };
   }, [projectId]);
   const [dragging, setDragging] = useState<{ taskId: string; fromColId: string } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
