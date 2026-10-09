@@ -14,12 +14,18 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: 
   const cached = await cacheGet(cacheKey);
   if (cached) return ok(cached);
 
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return error("NOT_FOUND", "Project not found", 404, ctx.requestId);
+
   const member = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: ctx.user.userId, projectId } },
   });
-  if (!member) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
+  
+  if (!member && project.ownerId !== ctx.user.userId) {
+    return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
+  }
 
-  const board = await prisma.board.findUnique({
+  let board = await prisma.board.findUnique({
     where: { projectId },
     include: {
       project: { select: { name: true } },
@@ -47,7 +53,31 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: 
     },
   });
 
-  if (!board) return error("NOT_FOUND", "Board not found", 404, ctx.requestId);
+  if (!board) {
+    // Auto-create board for older projects that didn't get one on creation
+    board = await prisma.board.create({
+      data: {
+        name: "Main Board",
+        projectId,
+        columns: {
+          create: [
+            { name: "Backlog", color: "#64748b", position: 0 },
+            { name: "To Do", color: "#6366f1", position: 1 },
+            { name: "In Progress", color: "#f59e0b", position: 2 },
+            { name: "In Review", color: "#06b6d4", position: 3 },
+            { name: "Done", color: "#22c55e", position: 4 }
+          ]
+        }
+      },
+      include: {
+        project: { select: { name: true } },
+        columns: {
+          orderBy: { position: "asc" },
+          include: { tasks: { include: { assignees: { include: { user: true } }, _count: true } } }
+        }
+      }
+    }) as any;
+  }
 
   await cacheSet(cacheKey, board, 15); // Short TTL for live board
   return ok(board);
