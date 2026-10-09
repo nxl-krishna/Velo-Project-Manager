@@ -204,14 +204,22 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
 
   async function triggerAI(taskId: string, type: "summarize" | "assign") {
     setAiLoading(taskId + type);
-    // Simulate AI call
-    await new Promise((r) => setTimeout(r, 2000));
-    const results: Record<string, string> = {
-      summarize: "🤖 This task involves implementing a real-time Kanban board with drag-and-drop. Key work: DnD library integration, optimistic UI updates, WebSocket sync, and conflict resolution via version fields.",
-      assign: "🎯 Suggested: Alice (confidence 91%) — Expert in frontend React, currently has 2 tasks in sprint, completed 6 similar UI tasks in the last quarter.",
-    };
-    setAiResult((p) => ({ ...p, [taskId + type]: results[type] }));
-    setAiLoading(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`/api/ai/tasks/${taskId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type })
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setAiResult((p) => ({ ...p, [taskId + type]: d.data?.result || "No result" }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAiLoading(null);
+    }
   }
 
   const totalTasks = columns.reduce((sum, c) => sum + c.tasks.length, 0);

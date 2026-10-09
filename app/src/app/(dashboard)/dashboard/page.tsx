@@ -171,9 +171,11 @@ export default function DashboardPage() {
               <div key={idx} className="ai-card">
                 <div style={{ fontWeight: 600, marginBottom: 6, fontSize: "0.9375rem" }}>{insight.title}</div>
                 <div style={{ color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>{insight.body}</div>
-                <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, padding: "6px 0", color: "var(--brand-400)" }}>
-                  {insight.action} →
-                </button>
+                <Link href="/projects" style={{ textDecoration: "none" }}>
+                  <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, padding: "6px 0", color: "var(--brand-400)" }}>
+                    {insight.action} →
+                  </button>
+                </Link>
               </div>
             ))}
             {loading && insights.length === 0 && (
