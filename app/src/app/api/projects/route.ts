@@ -17,7 +17,8 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
         _count: {
           select: { tasks: true, sprints: true }
         },
-        members: true // Just fetch the members, no 'user' relation since it doesn't exist
+        members: true,
+        tasks: { select: { status: true } }
       },
       orderBy: { updatedAt: 'desc' }
     });
@@ -58,12 +59,16 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
         }
       }
 
+      const totalTasks = p._count.tasks;
+      const doneTasks = p.tasks.filter(t => t.status === "DONE").length;
+      const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
       return {
         id: p.id,
         name: p.name,
         description: p.description || "No description provided",
         status: p.status,
-        progress: Math.floor(Math.random() * 100), // In a real app, compute based on completed tasks
+        progress: progress,
         dueDate: p.endDate?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         _count: p._count,
         members: memberDetails

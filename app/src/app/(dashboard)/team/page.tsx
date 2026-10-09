@@ -12,22 +12,26 @@ interface TeamMember {
   capacity: number;
 }
 
-const MOCK_TEAM: TeamMember[] = [
-  { id: "1", name: "Alice Engineer", email: "alice@projecthub.dev", role: "ADMIN", avatarColor: "var(--brand-500)", activeTasks: 4, capacity: 80 },
-  { id: "2", name: "Bob Designer", email: "bob@projecthub.dev", role: "MEMBER", avatarColor: "var(--info)", activeTasks: 6, capacity: 100 },
-  { id: "3", name: "Charlie Manager", email: "charlie@projecthub.dev", role: "MANAGER", avatarColor: "var(--warning)", activeTasks: 1, capacity: 20 },
-  { id: "4", name: "Diana Data", email: "diana@projecthub.dev", role: "MEMBER", avatarColor: "var(--success)", activeTasks: 8, capacity: 95 },
-];
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setTeam(MOCK_TEAM);
-      setLoading(false);
-    }, 500);
+    const token = localStorage.getItem("accessToken");
+    fetch("/api/team", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.data) {
+          // Map workload to capacity for compatibility
+          setTeam(d.data.map((m: any) => ({ ...m, capacity: m.workload, avatarColor: m.avatarUrl || "var(--brand-500)" })));
+        }
+        setLoading(false);
+      })
+      .catch(e => {
+        console.error(e);
+        setLoading(false);
+      });
   }, []);
 
   return (
