@@ -1,5 +1,14 @@
 // Temporary dummy implementation to allow the app to run without Redis
-export const redis = null as any;
+export const redis = {
+  get: async () => null,
+  set: async () => "OK",
+  incr: async () => 1,
+  expire: async () => 1,
+  del: async () => 1,
+  keys: async () => [],
+  publish: async () => 0,
+  ping: async () => "PONG"
+} as any;
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
   return null; // Always return cache miss
