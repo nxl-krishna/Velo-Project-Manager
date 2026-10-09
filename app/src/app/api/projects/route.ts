@@ -76,3 +76,49 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
     return error("INTERNAL_ERROR", "Failed to fetch projects", 500, requestId);
   }
 });
+
+export const POST = withAuth(async (req: NextRequest, ctx: ApiContext) => {
+  const requestId = ctx.requestId;
+  try {
+    const body = await req.json();
+    if (!body.name) {
+      return error("BAD_REQUEST", "Project name is required", 400, requestId);
+    }
+
+    // Get user's first org or create a default one
+    let orgMembership = await prisma.orgMember.findFirst({
+      where: { userId: ctx.user.userId }
+    });
+
+    if (!orgMembership) {
+      const org = await prisma.organization.create({
+        data: {
+          name: "Personal Workspace",
+          slug: `workspace-${ctx.user.userId.slice(-6)}`,
+          members: {
+            create: {
+              userId: ctx.user.userId,
+              role: "ADMIN"
+            }
+          }
+        }
+      });
+      orgMembership = { orgId: org.id } as any;
+    }
+
+    const project = await prisma.project.create({
+      data: {
+        name: body.name,
+        description: body.description || null,
+        status: body.status || "PLANNING",
+        orgId: orgMembership.orgId,
+        ownerId: ctx.user.userId,
+      }
+    });
+
+    return ok(project, 201);
+  } catch (err) {
+    console.error(err);
+    return error("INTERNAL_ERROR", "Failed to create project", 500, requestId);
+  }
+});

@@ -189,8 +189,30 @@ function NewProjectModal({ onClose }: { onClose: () => void }) {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // In real app: call API
-    setTimeout(() => { setLoading(false); onClose(); }, 1000);
+    
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(form)
+      });
+      
+      if (res.ok) {
+        window.location.reload(); // Quick refresh to show the new project!
+      } else {
+        const errData = await res.json();
+        alert(errData?.error?.message || "Failed to create project");
+      }
+    } catch (err) {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+      onClose();
+    }
   }
 
   return (
