@@ -7,6 +7,7 @@ const globalForRedis = globalThis as unknown as {
 function createRedisClient(): Redis {
   const client = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
     lazyConnect: true,
+    family: 4, // Force IPv4 to prevent ECONNRESET on ISPs without IPv6
     retryStrategy(times) {
       if (times > 3) return null;
       return Math.min(times * 200, 2000);
