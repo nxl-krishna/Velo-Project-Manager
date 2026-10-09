@@ -191,6 +191,13 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
       return next;
     });
 
+    const token = localStorage.getItem("accessToken");
+    fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ columnId: toColId })
+    }).catch(console.error);
+
     setDragging(null);
     setDragOver(null);
   }
@@ -425,14 +432,39 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
 
       {/* Task detail modal */}
       {selectedTask && (
-        <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+        <TaskDetailModal 
+          task={selectedTask} 
+          projectId={projectId}
+          onClose={() => setSelectedTask(null)} 
+          onUpdateTask={(updatedTask) => {
+            setColumns(prev => prev.map(col => ({
+              ...col,
+              tasks: col.tasks.map(t => t.id === updatedTask.id ? updatedTask : t)
+            })));
+            setSelectedTask(updatedTask);
+          }}
+        />
       )}
     </div>
   );
 }
 
-function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void }) {
-  const pc = PRIORITY_CONFIG[task.priority];
+function TaskDetailModal({ task, projectId, onClose, onUpdateTask }: { task: Task; projectId: string; onClose: () => void; onUpdateTask: (t: Task) => void; }) {
+  const pc = PRIORITY_CONFIG[task.priority] || { color: "gray", label: "None" };
+
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value ? new Date(e.target.value).toISOString() : null;
+    const token = localStorage.getItem("accessToken");
+    const res = await fetch(`/api/projects/${projectId}/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ dueDate: newDate })
+    });
+    if (res.ok) {
+      const { data } = await res.json();
+      onUpdateTask(data);
+    }
+  };
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 620, maxHeight: "85vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
@@ -466,7 +498,13 @@ function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void })
           </div>
           <div>
             <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 4 }}>DUE DATE</div>
-            <div style={{ fontSize: "0.9375rem" }}>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}</div>
+            <input 
+              type="date" 
+              className="input" 
+              style={{ padding: "4px 8px", fontSize: "0.9375rem" }}
+              defaultValue={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""} 
+              onChange={handleDateChange} 
+            />
           </div>
         </div>
 
