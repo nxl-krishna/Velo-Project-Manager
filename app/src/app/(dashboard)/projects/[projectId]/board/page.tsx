@@ -128,6 +128,50 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<Record<string, string>>({});
 
+  const [newTaskColId, setNewTaskColId] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+
+  async function handleCreateTask(colId: string) {
+    if (!newTaskTitle.trim()) return;
+    setIsCreatingTask(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`/api/projects/${projectId}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: newTaskTitle,
+          columnId: colId,
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Optimistically add to column
+        setColumns(prev => {
+          const next = [...prev];
+          const colIndex = next.findIndex(c => c.id === colId);
+          if (colIndex !== -1) {
+            next[colIndex] = { ...next[colIndex], tasks: [...next[colIndex].tasks, data.data] };
+          }
+          return next;
+        });
+        setNewTaskTitle("");
+        setNewTaskColId(null);
+      } else {
+        const err = await res.json();
+        alert(err?.error?.message || "Failed to create task");
+      }
+    } catch (e) {
+      alert("Error creating task");
+    } finally {
+      setIsCreatingTask(false);
+    }
+  }
+
   function handleDragStart(taskId: string, fromColId: string) {
     setDragging({ taskId, fromColId });
   }
@@ -187,7 +231,13 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
             ))}
           </div>
           <button className="btn btn-ghost btn-sm">⚡ Sprint 3</button>
-          <button className="btn btn-primary btn-sm" id="add-task-btn">+ Add Task</button>
+          <button 
+            className="btn btn-primary btn-sm" 
+            id="add-task-btn"
+            onClick={() => { if (columns.length > 0) { setNewTaskColId(columns[0].id); setNewTaskTitle(""); } }}
+          >
+            + Add Task
+          </button>
         </div>
       </div>
 
@@ -321,13 +371,40 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
                 ))}
 
                 {/* Add task button */}
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ width: "100%", justifyContent: "flex-start", color: "var(--text-muted)", padding: "8px 6px" }}
-                  id={`add-task-${col.id}`}
-                >
-                  + Add task
-                </button>
+                {newTaskColId === col.id ? (
+                  <div style={{ padding: "8px", background: "var(--surface-1)", borderRadius: 6, marginTop: 8 }}>
+                    <input
+                      autoFocus
+                      className="input"
+                      style={{ width: "100%", marginBottom: 8 }}
+                      placeholder="Task title..."
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newTaskTitle.trim()) handleCreateTask(col.id);
+                        if (e.key === "Escape") { setNewTaskColId(null); setNewTaskTitle(""); }
+                      }}
+                      disabled={isCreatingTask}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleCreateTask(col.id)} disabled={isCreatingTask || !newTaskTitle.trim()}>
+                        {isCreatingTask ? "Saving..." : "Save"}
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setNewTaskColId(null); setNewTaskTitle(""); }} disabled={isCreatingTask}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ width: "100%", justifyContent: "flex-start", color: "var(--text-muted)", padding: "8px 6px", marginTop: 8 }}
+                    onClick={() => { setNewTaskColId(col.id); setNewTaskTitle(""); }}
+                    id={`add-task-${col.id}`}
+                  >
+                    + Add task
+                  </button>
+                )}
               </div>
             </div>
           ))}

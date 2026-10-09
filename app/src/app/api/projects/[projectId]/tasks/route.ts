@@ -38,10 +38,13 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: 
   const cached = await cacheGet(cacheKey);
   if (cached) return ok(cached);
 
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return error("NOT_FOUND", "Project not found", 404, ctx.requestId);
+
   const member = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: ctx.user.userId, projectId } },
   });
-  if (!member) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
+  if (!member && project.ownerId !== ctx.user.userId) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
 
   const where = {
     projectId,
@@ -83,10 +86,13 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext, context?:
   const v = validate(createTaskSchema, body, ctx.requestId);
   if (!v.success) return v.response;
 
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return error("NOT_FOUND", "Project not found", 404, ctx.requestId);
+
   const member = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: ctx.user.userId, projectId } },
   });
-  if (!member) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
+  if (!member && project.ownerId !== ctx.user.userId) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
 
   const { assigneeIds, ...taskData } = v.data;
 
