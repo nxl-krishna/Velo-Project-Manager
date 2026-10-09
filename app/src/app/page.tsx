@@ -68,6 +68,7 @@ export default function HomePage() {
             marginBottom: "24px",
             maxWidth: "800px",
             margin: "0 auto 24px",
+            color: "#ffffff",
           }}>
             Ship faster with{" "}
             <span className="gradient-text">AI-assisted</span>
@@ -75,7 +76,7 @@ export default function HomePage() {
           </h1>
           <p style={{
             fontSize: "1.25rem",
-            color: "var(--text-secondary)",
+            color: "#e2e8f0",
             maxWidth: "600px",
             margin: "0 auto 40px",
             lineHeight: 1.7,
