@@ -33,17 +33,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
 
-  // Mock data for demo (replace with real API calls)
   useEffect(() => {
-    setTimeout(() => {
-      setProjects([
-        { id: "1", name: "Website Redesign", description: "Q4 complete frontend overhaul with new brand guidelines", status: "ACTIVE", _count: { tasks: 24, sprints: 3 } },
-        { id: "2", name: "Mobile App v2.0", description: "Cross-platform React Native app with offline support", status: "IN_PROGRESS" as never, _count: { tasks: 47, sprints: 5 } },
-        { id: "3", name: "API Gateway Migration", description: "Move from REST to GraphQL microservices architecture", status: "PLANNING", _count: { tasks: 12, sprints: 1 } },
-        { id: "4", name: "Data Pipeline", description: "Real-time ETL pipeline for analytics infrastructure", status: "COMPLETED", _count: { tasks: 31, sprints: 4 } },
-      ]);
-      setLoading(false);
-    }, 600);
+    const token = localStorage.getItem("accessToken");
+    fetch("/api/projects", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.data) setProjects(d.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch projects", err);
+        setLoading(false);
+      });
   }, []);
 
   const STAT_CARDS = [

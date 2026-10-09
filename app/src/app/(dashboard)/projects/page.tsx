@@ -13,12 +13,7 @@ interface Project {
   members: { name: string, color: string }[];
 }
 
-const MOCK_PROJECTS: Project[] = [
-  { id: "1", name: "Website Redesign", description: "Q4 complete frontend overhaul with new brand guidelines.", status: "ACTIVE", progress: 65, dueDate: "2026-11-15", members: [{name: "A", color: "var(--brand-500)"}, {name: "B", color: "var(--info)"}] },
-  { id: "2", name: "Mobile App v2.0", description: "Cross-platform React Native app with offline support.", status: "IN_PROGRESS", progress: 32, dueDate: "2026-12-01", members: [{name: "C", color: "var(--warning)"}] },
-  { id: "3", name: "API Gateway Migration", description: "Move from REST to GraphQL microservices architecture.", status: "PLANNING", progress: 5, dueDate: "2027-01-20", members: [{name: "A", color: "var(--brand-500)"}, {name: "D", color: "var(--success)"}] },
-  { id: "4", name: "Data Pipeline", description: "Real-time ETL pipeline for analytics infrastructure.", status: "COMPLETED", progress: 100, dueDate: "2026-09-30", members: [{name: "E", color: "var(--danger)"}] },
-];
+
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -26,11 +21,19 @@ export default function ProjectsPage() {
   const [filter, setFilter] = useState("ALL");
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setProjects(MOCK_PROJECTS);
-      setLoading(false);
-    }, 500);
+    const token = localStorage.getItem("accessToken");
+    fetch("/api/projects", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.data) setProjects(d.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   const filteredProjects = projects.filter(p => filter === "ALL" ? true : p.status === filter);
