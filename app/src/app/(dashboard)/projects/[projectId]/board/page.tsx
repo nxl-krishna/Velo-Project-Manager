@@ -78,9 +78,29 @@ let socket: any;
 
 export default function BoardPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params);
-  const [columns, setColumns] = useState<Column[]>(DEMO_BOARD);
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [projectName, setProjectName] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    fetch(`/api/projects/${projectId}/board`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.data) {
+          if (data.data.columns) setColumns(data.data.columns);
+          if (data.data.project?.name) setProjectName(data.data.project.name);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch board", err);
+        setLoading(false);
+      });
+
+
     // Connect to custom Next.js server with Socket.io
     socket = io(window.location.origin);
     
@@ -152,7 +172,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
       {/* Topbar */}
       <div className="topbar">
         <div style={{ flex: 1 }}>
-          <h2 style={{ fontWeight: 600, fontSize: "1rem" }}>📁 Website Redesign — Board</h2>
+          <h2 style={{ fontWeight: 600, fontSize: "1rem" }}>📁 {projectName ? projectName : "Project"} — Board</h2>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
             <div className="progress-bar" style={{ width: 120 }}>
               <div className="progress-fill" style={{ width: `${progress}%` }} />
@@ -173,8 +193,15 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
 
       {/* Board */}
       <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
-        <div className="board-container">
-          {columns.map((col) => (
+        {loading ? (
+          <div style={{ display: "flex", gap: 16, height: "100%" }}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="skeleton" style={{ width: 280, height: "100%", borderRadius: 8 }} />
+            ))}
+          </div>
+        ) : (
+          <div className="board-container">
+            {columns.map((col) => (
             <div
               key={col.id}
               className="kanban-column"
@@ -305,17 +332,18 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
             </div>
           ))}
 
-          {/* Add column */}
-          <div style={{ flex: "0 0 260px" }}>
-            <button
-              className="card"
-              style={{ border: "2px dashed var(--border)", background: "transparent", cursor: "pointer", width: "100%", padding: "20px", display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: "0.9375rem" }}
-              id="add-column-btn"
-            >
-              + Add column
-            </button>
+            {/* Add column */}
+            <div style={{ flex: "0 0 260px" }}>
+              <button
+                className="card"
+                style={{ border: "2px dashed var(--border)", background: "transparent", cursor: "pointer", width: "100%", padding: "20px", display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: "0.9375rem" }}
+                id="add-column-btn"
+              >
+                + Add column
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Task detail modal */}

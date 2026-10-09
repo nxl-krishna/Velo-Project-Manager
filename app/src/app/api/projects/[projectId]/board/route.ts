@@ -22,6 +22,7 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: 
   const board = await prisma.board.findUnique({
     where: { projectId },
     include: {
+      project: { select: { name: true } },
       columns: {
         orderBy: { position: "asc" },
         include: {

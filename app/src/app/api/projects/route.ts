@@ -113,6 +113,26 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext) => {
         status: body.status || "PLANNING",
         orgId: orgMembership.orgId,
         ownerId: ctx.user.userId,
+        members: {
+          create: {
+            userId: ctx.user.userId,
+            role: "ADMIN"
+          }
+        },
+        boards: {
+          create: {
+            name: "Main Board",
+            columns: {
+              create: [
+                { name: "Backlog", color: "#64748b", position: 0 },
+                { name: "To Do", color: "#6366f1", position: 1 },
+                { name: "In Progress", color: "#f59e0b", position: 2 },
+                { name: "In Review", color: "#06b6d4", position: 3 },
+                { name: "Done", color: "#22c55e", position: 4 }
+              ]
+            }
+          }
+        }
       }
     });
 
