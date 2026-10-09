@@ -16,7 +16,7 @@ export const POST = withAuth(async (req: NextRequest, ctx: ApiContext, context?:
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        project: { include: { members: { include: { user: true } } } },
+        project: { include: { members: true } },
         assignees: { include: { user: true } }
       }
     });
@@ -31,7 +31,12 @@ Description: "${task.description || 'No description provided.'}"
 Priority: ${task.priority}
 Status: ${task.status}`;
     } else if (type === "assign") {
-      const members = task.project.members.map(m => m.user.name).join(", ");
+      const memberUserIds = task.project.members.map(m => m.userId);
+      // Fetch users manually since ProjectMember lacks a Prisma relation to User
+      const users = await prisma.user.findMany({
+        where: { id: { in: memberUserIds } }
+      });
+      const members = users.map(u => u.name).join(", ");
       prompt = `Given the task "${task.title}" (Priority: ${task.priority}), suggest ONE person to assign it to from this team: [${members}]. 
 Write a 1-sentence explanation of why they are a good fit. Be creative but realistic. Format: "🎯 Suggested: [Name] - [Reason]"`;
     }
