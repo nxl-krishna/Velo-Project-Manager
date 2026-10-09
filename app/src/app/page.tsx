@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import VeloLogo from "@/components/VeloLogo";
 
 export default function HomePage() {
   const router = useRouter();
@@ -39,12 +41,7 @@ export default function HomePage() {
           padding: "20px 48px", position: "relative", zIndex: 10,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{
-              width: 36, height: 36, background: "var(--brand-500)",
-              borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "1.25rem",
-            }}>⬡</div>
-            <span style={{ fontWeight: 700, fontSize: "1.125rem" }}>ProjectHub</span>
+            <VeloLogo size={40} />
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
             <Link href="/auth/login" className="btn btn-ghost">Sign in</Link>
@@ -53,7 +50,11 @@ export default function HomePage() {
         </nav>
 
         {/* Hero content */}
-        <div style={{
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{
           textAlign: "center", padding: "80px 24px 100px",
           position: "relative", zIndex: 10,
         }}>
@@ -92,7 +93,7 @@ export default function HomePage() {
           <p style={{ marginTop: "16px", fontSize: "0.875rem", color: "var(--text-muted)" }}>
             No credit card required · Free forever for small teams
           </p>
-        </div>
+        </motion.div>
       </header>
 
       {/* Feature grid */}
@@ -105,21 +106,30 @@ export default function HomePage() {
             Built for engineering teams who move fast
           </p>
 
-          <div style={{
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
             gap: "20px",
           }}>
-            {FEATURES.map((f) => (
-              <div key={f.title} className="card card-hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {FEATURES.map((f, i) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                key={f.title} className="card card-hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <div style={{ fontSize: "2rem" }}>{f.icon}</div>
                 <h3 style={{ fontWeight: 600, fontSize: "1.125rem" }}>{f.title}</h3>
                 <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", lineHeight: 1.6 }}>
                   {f.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -167,7 +177,7 @@ export default function HomePage() {
         color: "var(--text-muted)",
         fontSize: "0.875rem",
       }}>
-        <span>© 2025 ProjectHub. Built with ❤️ and Next.js</span>
+        <span>© 2026 Velo. Built with ❤️ and Next.js</span>
         <div style={{ display: "flex", gap: "24px" }}>
           <Link href="/api/health" style={{ color: "inherit", textDecoration: "none" }}>API Status</Link>
           <Link href="#" style={{ color: "inherit", textDecoration: "none" }}>Privacy</Link>
