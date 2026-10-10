@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import type { Role } from "@prisma/client";
+import { apiFetch } from "@/lib/client-api";
+import { ROLE_LABEL } from "@/lib/permissions";
+import NewProjectModal from "@/components/NewProjectModal";
+import { useCan, useCurrentUser } from "@/components/CurrentUserContext";
+import { Avatar, ROLE_BADGE } from "@/components/ProjectMembersModal";
 
 interface Project {
   id: string;
@@ -9,32 +15,32 @@ interface Project {
   description: string;
   status: string;
   progress: number;
-  dueDate: string;
-  members: { name: string, color: string }[];
+  dueDate: string | null;
+  members: { id: string; name: string; avatarUrl: string | null; isOwner: boolean }[];
+  myRole: Role | null;
 }
-
-
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
+  const [showNewProject, setShowNewProject] = useState(false);
+  const canCreate = useCan("project.create");
+  const me = useCurrentUser();
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    fetch("/api/projects", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+  const loadProjects = useCallback(() => {
+    return apiFetch("/api/projects")
       .then(r => r.json())
       .then(d => {
         if (d.data) setProjects(d.data);
-        setLoading(false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   const filteredProjects = projects.filter(p => filter === "ALL" ? true : p.status === filter);
 
@@ -44,13 +50,13 @@ export default function ProjectsPage() {
         <div style={{ flex: 1 }}>
           <h2 style={{ fontWeight: 600, fontSize: "1.125rem" }}>Projects</h2>
         </div>
-        <button className="btn btn-primary btn-sm">+ New Project</button>
+        {canCreate && <button className="btn btn-primary btn-sm" onClick={() => setShowNewProject(true)}>+ New Project</button>}
       </div>
 
       <div style={{ padding: "24px", flex: 1 }}>
         {/* Filters */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {["ALL", "ACTIVE", "IN_PROGRESS", "PLANNING", "COMPLETED"].map(f => (
+          {["ALL", "ACTIVE", "PLANNING", "ON_HOLD", "COMPLETED"].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -66,6 +72,12 @@ export default function ProjectsPage() {
            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
              {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 200 }} />)}
            </div>
+        ) : projects.length === 0 ? (
+          <div style={{ padding: 48, textAlign: "center", color: "var(--text-muted)" }}>
+            {canCreate || !me
+              ? "No projects yet. Create one to get started."
+              : "You haven't been added to any projects yet. Ask a manager or admin to add you."}
+          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
             {filteredProjects.map((p) => (
@@ -90,13 +102,21 @@ export default function ProjectsPage() {
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div className="avatar-group">
-                        {p.members.map((m, i) => (
-                          <div key={i} className="avatar avatar-sm" style={{ background: m.color }}>{m.name}</div>
-                        ))}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div className="avatar-group">
+                          {p.members.slice(0, 5).map((m) => (
+                            <Avatar key={m.id} name={m.name} avatarUrl={m.avatarUrl} size={24} />
+                          ))}
+                        </div>
+                        {p.members.length > 5 && <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>+{p.members.length - 5}</span>}
+                        {p.myRole && (
+                          <span className={`badge ${ROLE_BADGE[p.myRole]}`} title="Your role on this project" style={{ fontSize: "0.625rem" }}>
+                            {ROLE_LABEL[p.myRole]}
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                        ⏱ Due {new Date(p.dueDate).toLocaleDateString()}
+                        ⏱ {p.dueDate ? `Due ${new Date(p.dueDate).toLocaleDateString()}` : "No due date"}
                       </div>
                     </div>
                   </div>
@@ -106,6 +126,10 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {showNewProject && (
+        <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadProjects} />
+      )}
     </div>
   );
 }

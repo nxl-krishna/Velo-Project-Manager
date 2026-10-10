@@ -1,21 +1,26 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client-api";
 
 interface Task {
   id: string;
   title: string;
   dueDate: string | null;
   priority: string;
+  status: string;
+  projectId: string;
+  project?: { name: string };
 }
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    fetch("/api/tasks", { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch("/api/tasks?scope=projects")
       .then(r => r.json())
       .then(d => {
         if (d.data) setTasks(d.data);
@@ -55,9 +60,9 @@ export default function CalendarPage() {
     return tasks.filter(t => {
       if (!t.dueDate) return false;
       const d = new Date(t.dueDate);
-      return d.getDate() === date.getDate() && 
-             d.getMonth() === date.getMonth() && 
-             d.getFullYear() === date.getFullYear();
+      return d.getUTCDate() === date.getDate() && 
+             d.getUTCMonth() === date.getMonth() && 
+             d.getUTCFullYear() === date.getFullYear();
     });
   };
 
@@ -95,8 +100,10 @@ export default function CalendarPage() {
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {dayTasks.map(t => (
-                      <div key={t.id} title={t.title} style={{ 
+                      <div key={t.id} title={`${t.title}${t.project ? ` · ${t.project.name}` : ""}`} onClick={() => router.push(`/projects/${t.projectId}/board`)} style={{ 
                         background: t.priority === "HIGH" || t.priority === "CRITICAL" ? "var(--danger)" : "var(--brand-500)", 
+                        opacity: t.status === "DONE" ? 0.5 : 1,
+                        textDecoration: t.status === "DONE" ? "line-through" : "none",
                         color: "white", 
                         padding: "2px 6px", 
                         borderRadius: 4, 

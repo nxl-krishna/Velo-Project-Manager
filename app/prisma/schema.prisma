@@ -215,6 +215,7 @@ model Task {
   comments  Comment[]
   history   TaskHistory[]
   aiResults AIResult[]
+  ragDocs   RagDocument[]
 
   @@index([projectId])
   @@index([sprintId])
@@ -306,4 +307,25 @@ model AIResult {
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId, type])
+}
+
+// Embedded task/comment text for RAG retrieval. Requires the pgvector extension:
+//   CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+// Rows are written with raw SQL (see src/lib/rag.ts) because Prisma cannot write vector columns.
+model RagDocument {
+  id          String                      @id
+  entityType  String // "task" | "comment"
+  entityId    String
+  taskId      String
+  projectId   String
+  content     String
+  contentHash String
+  embedding   Unsupported("vector(768)")?
+  updatedAt   DateTime                    @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId])
+  @@index([projectId])
+  @@index([taskId])
 }

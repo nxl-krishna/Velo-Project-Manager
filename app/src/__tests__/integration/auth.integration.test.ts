@@ -6,8 +6,7 @@
 // These tests require a real DB and Redis to run.
 // Run with: npm run test:integration (uses Docker Compose test environment)
 
-import { createServer } from "http";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // Mock Prisma for integration test isolation
 jest.mock("../../lib/prisma", () => {
@@ -69,7 +68,7 @@ process.env.JWT_SECRET = "test-secret-key-that-is-at-least-32-chars!!";
 process.env.JWT_REFRESH_SECRET = "test-refresh-secret-key-32-chars-min!!";
 
 // Helper to call Next.js route handlers
-async function callRoute(handler: Function, method: string, body?: unknown, headers: Record<string, string> = {}) {
+async function callRoute(handler: (req: NextRequest) => Promise<NextResponse | Response>, method: string, body?: unknown, headers: Record<string, string> = {}) {
   const req = new NextRequest(`http://localhost:3000/api/test`, {
     method,
     headers: { "Content-Type": "application/json", "x-forwarded-for": "127.0.0.1", ...headers },
@@ -80,7 +79,6 @@ async function callRoute(handler: Function, method: string, body?: unknown, head
 
 describe("Auth API — Integration Tests", () => {
   let accessToken: string;
-  let refreshToken: string;
 
   // ─── Register ─────────────────────────────────────────
   describe("POST /api/auth/register", () => {
@@ -97,7 +95,6 @@ describe("Auth API — Integration Tests", () => {
       expect(body.data.accessToken).toBeTruthy();
       expect(body.data.refreshToken).toBeTruthy();
       accessToken = body.data.accessToken;
-      refreshToken = body.data.refreshToken;
     });
 
     it("should reject invalid email", async () => {

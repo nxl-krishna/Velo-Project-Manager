@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import VeloLogo from "@/components/VeloLogo";
 
 export default function HomePage() {
-  const router = useRouter();
-
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {/* Hero Section */}

@@ -1,35 +1,41 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { withAuth, ok, created, error, validate, audit, ApiContext } from "@/lib/api";
+import { withAuth, ok, created, error, validate, audit, getParams, getProjectAccess, ApiContext, RouteContext } from "@/lib/api";
 import { cacheGet, cacheSet, cacheDel } from "@/lib/redis";
+import { can } from "@/lib/permissions";
 
-const createSprintSchema = z.object({
-  name: z.string().min(1).max(200),
-  goal: z.string().optional(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-});
+const createSprintSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    goal: z.string().optional(),
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+  })
+  .refine((s) => new Date(s.endDate) > new Date(s.startDate), {
+    message: "endDate must be after startDate",
+    path: ["endDate"],
+  });
 
 // GET /api/projects/[projectId]/sprints
-export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: { params: Promise<Record<string, string>> }) => {
-    const params = await context?.params;
-  const projectId = params?.projectId!;
+export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: RouteContext) => {
+  const { projectId } = await getParams(context);
+
+  const access = await getProjectAccess(projectId, ctx.user.userId);
+  if (!access) return error("NOT_FOUND", "Project not found", 404, ctx.requestId);
+  if (!access.role) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
+
   const cacheKey = `sprints:${projectId}`;
   const cached = await cacheGet(cacheKey);
   if (cached) return ok(cached);
-
-  const member = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: ctx.user.userId, projectId } },
-  });
-  if (!member) return error("FORBIDDEN", "Not a project member", 403, ctx.requestId);
 
   const sprints = await prisma.sprint.findMany({
     where: { projectId },
     orderBy: { startDate: "desc" },
     include: {
-      _count: { select: { tasks: true } },
+      _count: { select: { tasks: { where: { deletedAt: null } } } },
       tasks: {
+        where: { deletedAt: null },
         select: { status: true, storyPoints: true },
       },
     },
@@ -49,17 +55,15 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext, context?: 
 });
 
 // POST /api/projects/[projectId]/sprints
-export const POST = withAuth(async (req: NextRequest, ctx: ApiContext, context?: { params: Promise<Record<string, string>> }) => {
-    const params = await context?.params;
-  const projectId = params?.projectId!;
+export const POST = withAuth(async (req: NextRequest, ctx: ApiContext, context?: RouteContext) => {
+  const { projectId } = await getParams(context);
   const body = await req.json();
   const v = validate(createSprintSchema, body, ctx.requestId);
   if (!v.success) return v.response;
 
-  const member = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: ctx.user.userId, projectId } },
-  });
-  if (!member || member.role === "MEMBER") {
+  const access = await getProjectAccess(projectId, ctx.user.userId);
+  if (!access) return error("NOT_FOUND", "Project not found", 404, ctx.requestId);
+  if (!can(access.role, "sprint.manage")) {
     return error("FORBIDDEN", "Only Admins and Managers can create sprints", 403, ctx.requestId);
   }
 

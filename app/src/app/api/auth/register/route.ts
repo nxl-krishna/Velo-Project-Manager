@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 import {
   hashPassword,
   signAccessToken,
   createRefreshToken,
   checkLoginRateLimit,
+  getClientIp,
 } from "@/lib/auth";
 import { error, validate, log } from "@/lib/api";
-import { v4 as uuidv4 } from "uuid";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(100),
@@ -21,7 +22,7 @@ const registerSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const requestId = uuidv4();
+  const requestId = randomUUID();
 
   try {
     const body = await req.json();
@@ -31,8 +32,8 @@ export async function POST(req: NextRequest) {
     const { name, email, password } = v.data;
 
     // Check rate limit
-    const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-    const allowed = await checkLoginRateLimit(ip);
+    const ip = getClientIp(req.headers);
+    const allowed = await checkLoginRateLimit(ip, "register");
     if (!allowed) {
       return error("RATE_LIMITED", "Too many requests. Try again later.", 429, requestId);
     }

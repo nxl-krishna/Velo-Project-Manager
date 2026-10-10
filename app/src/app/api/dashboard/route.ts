@@ -1,19 +1,26 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, error, ApiContext } from "@/lib/api";
+import { createHash } from "crypto";
+import { generateText, isGeminiConfigured } from "@/lib/gemini";
+import { cacheGet, cacheSet } from "@/lib/redis";
+import { accessibleProjectsWhere } from "@/lib/org";
+
+const INSIGHTS_TIMEOUT_MS = 10000;
+const INSIGHTS_CACHE_TTL_S = 600;
+
+interface Insight {
+  title: string;
+  body: string;
+  action: string;
+}
 
 export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
   const requestId = ctx.requestId;
   try {
-    // 1. Fetch user's active projects (where they are owner or member)
+    // 1. Fetch the projects the user can access
     const projects = await prisma.project.findMany({
-      where: {
-        OR: [
-          { ownerId: ctx.user.userId },
-          { members: { some: { userId: ctx.user.userId } } }
-        ],
-        deletedAt: null
-      },
+      where: accessibleProjectsWhere(ctx.user.userId),
       include: {
         tasks: {
           where: { deletedAt: null }
@@ -25,12 +32,14 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
     // 2. Calculate Stats
     const totalProjects = projects.length;
     let totalTasks = 0;
+    let openTasks = 0;
     let inProgress = 0;
     const teamMembersSet = new Set<string>();
 
     // For AI context
     const projectSummaries = projects.map(p => {
       totalTasks += p.tasks.length;
+      openTasks += p.tasks.filter(t => t.status !== "DONE").length;
       inProgress += p.tasks.filter(t => t.status === "IN_PROGRESS").length;
       
       teamMembersSet.add(p.ownerId);
@@ -46,13 +55,18 @@ export const GET = withAuth(async (req: NextRequest, ctx: ApiContext) => {
     const stats = {
       totalProjects,
       totalTasks,
+      openTasks,
       inProgress,
       teamMembers: teamMembersSet.size
     };
 
     // 3. Generate AI Insights via Gemini API
-    let insights = [];
-    if (process.env.GOOGLE_AI_API_KEY && projects.length > 0) {
+    if (new URL(req.url).searchParams.get("insights") === "false") {
+      return ok({ stats });
+    }
+
+    let insights: Insight[] = [];
+    if (isGeminiConfigured() && projects.length > 0) {
       const prompt = `You are an AI project manager analyzing a user's workspace.
 Here is the JSON summary of their projects and tasks:
 ${JSON.stringify(projectSummaries)}
@@ -63,27 +77,25 @@ The second should be a positive observation or a suggestion.
 Return ONLY a valid JSON array of objects with this format: 
 [{"title": "emoji and short title", "body": "1 sentence explanation", "action": "View projects"}]`;
 
-      try {
-        const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2 }
-          })
-        });
-
-        if (aiRes.ok) {
-          const aiData = await aiRes.json();
-          let text = aiData.candidates[0].content.parts[0].text;
+      // Keyed on the workspace contents so insights regenerate only when tasks change
+      const cacheKey = `insights:${ctx.user.userId}:${createHash("sha1").update(JSON.stringify(projectSummaries)).digest("hex")}`;
+      const cached = await cacheGet<Insight[]>(cacheKey);
+      if (cached) {
+        insights = cached;
+      } else {
+        try {
+          const text = await generateText(prompt, 0.2, INSIGHTS_TIMEOUT_MS);
           // Strip markdown blocks if any
-          text = text.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-          insights = JSON.parse(text);
-        } else {
-          console.error("Gemini API error:", await aiRes.text());
+          const parsed: unknown = JSON.parse(text.replace(/```json\n?/g, "").replace(/```/g, "").trim());
+          if (Array.isArray(parsed)) {
+            insights = parsed.filter(
+              (i): i is Insight => typeof i?.title === "string" && typeof i?.body === "string"
+            ).map(i => ({ ...i, action: typeof i.action === "string" ? i.action : "View projects" }));
+          }
+          if (insights.length > 0) await cacheSet(cacheKey, insights, INSIGHTS_CACHE_TTL_S);
+        } catch (e) {
+          console.error("Failed to generate Gemini insights:", e instanceof Error ? `${e.name}: ${e.message}` : e);
         }
-      } catch (e) {
-        console.error("Failed to parse Gemini response", e);
       }
     }
 

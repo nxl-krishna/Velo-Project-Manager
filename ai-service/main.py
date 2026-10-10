@@ -39,7 +39,7 @@ except Exception as e:
 try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv("GOOGLE_AI_API_KEY", ""))
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+    gemini_model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.8-flash"))
     AI_PROVIDER = "gemini"
 except ImportError:
     gemini_model = None
@@ -198,6 +198,7 @@ Return this exact JSON:
   "complexity": "low|medium|high"
 }}"""
 
+    succeeded = True
     try:
         raw = await call_gemini(prompt)
         
@@ -211,6 +212,7 @@ Return this exact JSON:
             result = json.loads(raw)
     except Exception as e:
         log.error("Summarize failed", error=str(e))
+        succeeded = False
         result = {
             "summary": f"AI summarization unavailable. Task: {req.title}",
             "key_points": ["Manual review recommended"],
@@ -219,7 +221,8 @@ Return this exact JSON:
     
     latency_ms = int((time.time() - start) * 1000)
     response = {**result, "model": AI_PROVIDER, "latency_ms": latency_ms}
-    cache_set(ck, response, ttl=3600)
+    if succeeded:
+        cache_set(ck, response, ttl=3600)
     
     log.info("Task summarized", latency_ms=latency_ms)
     return response
@@ -250,6 +253,7 @@ Return JSON:
   ]
 }}"""
 
+    succeeded = True
     try:
         raw = await call_gemini(prompt)
         if raw == "MOCK_RESPONSE":
@@ -261,11 +265,13 @@ Return JSON:
             suggestions = data.get("suggestions", [])
     except Exception as e:
         log.error("Assignee suggestion failed", error=str(e))
+        succeeded = False
         suggestions = []
     
     latency_ms = int((time.time() - start) * 1000)
     response = {"suggestions": suggestions, "model": AI_PROVIDER, "latency_ms": latency_ms}
-    cache_set(ck, response, ttl=1800)
+    if succeeded:
+        cache_set(ck, response, ttl=1800)
     return response
 
 

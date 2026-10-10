@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/client-api";
 
 interface Task {
   id: string;
@@ -17,17 +18,13 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    fetch("/api/tasks", { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch("/api/tasks")
       .then(r => r.json())
       .then(d => {
         if (d.data) setTasks(d.data);
-        setLoading(false);
       })
-      .catch(e => {
-        console.error(e);
-        setLoading(false);
-      });
+      .catch(e => console.error(e))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredTasks = tasks.filter(t => 
@@ -62,7 +59,7 @@ export default function MyTasksPage() {
                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                  <span className={`priority-dot priority-${t.priority}`} />
                  <span style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
-                   {t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "No Due Date"}
+                   {t.dueDate ? new Date(t.dueDate).toLocaleDateString(undefined, { timeZone: "UTC" }) : "No Due Date"}
                  </span>
                </div>
             </div>

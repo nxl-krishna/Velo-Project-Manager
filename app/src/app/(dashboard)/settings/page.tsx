@@ -1,24 +1,40 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { apiFetch } from "@/lib/client-api";
+
+type NotificationKey = "emailMentions" | "emailAssignments" | "pushReminders" | "marketing";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState("Demo User");
-  const [email, setEmail] = useState("demo@projecthub.dev");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    apiFetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.data) {
+          setName(d.data.name ?? "");
+          setEmail(d.data.email ?? "");
+          if (d.data.avatarUrl) setAvatarUrl(d.data.avatarUrl);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const imageUrl = URL.createObjectURL(file);
-      setAvatarUrl(imageUrl);
+      if (avatarUrl?.startsWith("blob:")) URL.revokeObjectURL(avatarUrl);
+      setAvatarUrl(URL.createObjectURL(file));
     }
   };
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState<Record<NotificationKey, boolean>>({
     emailMentions: true,
     emailAssignments: true,
     pushReminders: false,
@@ -147,12 +163,12 @@ export default function SettingsPage() {
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {[
+                  {([
                     { id: "emailMentions", title: "Email Mentions", desc: "Get an email when someone @mentions you in a task or comment." },
                     { id: "emailAssignments", title: "Task Assignments", desc: "Get notified when a new task is assigned to you." },
                     { id: "pushReminders", title: "Push Reminders", desc: "Receive browser push notifications for approaching deadlines." },
                     { id: "marketing", title: "Marketing Emails", desc: "Receive updates about new features and product announcements." },
-                  ].map(item => (
+                  ] satisfies { id: NotificationKey; title: string; desc: string }[]).map(item => (
                     <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div>
                         <div style={{ fontWeight: 500, marginBottom: 4 }}>{item.title}</div>
@@ -162,18 +178,18 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           style={{ opacity: 0, width: 0, height: 0 }} 
-                          checked={(notifications as any)[item.id]} 
+                          checked={notifications[item.id]} 
                           onChange={(e) => setNotifications({...notifications, [item.id]: e.target.checked})}
                         />
                         <span style={{ 
                           position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0, 
-                          backgroundColor: (notifications as any)[item.id] ? "var(--brand-500)" : "var(--surface-3)", 
+                          backgroundColor: notifications[item.id] ? "var(--brand-500)" : "var(--surface-3)", 
                           borderRadius: 34, transition: "0.2s" 
                         }}>
                           <span style={{
                             position: "absolute", content: '""', height: 18, width: 18, left: 3, bottom: 3,
                             backgroundColor: "white", borderRadius: "50%", transition: "0.2s",
-                            transform: (notifications as any)[item.id] ? "translateX(20px)" : "translateX(0)"
+                            transform: notifications[item.id] ? "translateX(20px)" : "translateX(0)"
                           }} />
                         </span>
                       </label>

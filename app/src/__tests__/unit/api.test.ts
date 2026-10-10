@@ -3,7 +3,6 @@
  * Tests: response helpers, validation, structured logging
  */
 
-import { NextRequest } from "next/server";
 import { validate, log, ok, error, created } from "../../lib/api";
 import { z } from "zod";
 

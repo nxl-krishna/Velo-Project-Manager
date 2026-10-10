@@ -1,11 +1,15 @@
 import { Queue, Worker, Job } from "bullmq";
-import { redis } from "./redis";
 import nodemailer from "nodemailer";
 
 // ─── Queue definitions ────────────────────────────────────────
+const redisUrl = new URL(process.env.REDIS_URL || "redis://localhost:6379");
 const connection = {
-  host: new URL(process.env.REDIS_URL || "redis://localhost:6379").hostname,
-  port: parseInt(new URL(process.env.REDIS_URL || "redis://localhost:6379").port || "6379"),
+  host: redisUrl.hostname,
+  port: parseInt(redisUrl.port || "6379"),
+  username: redisUrl.username ? decodeURIComponent(redisUrl.username) : undefined,
+  password: redisUrl.password ? decodeURIComponent(redisUrl.password) : undefined,
+  tls: redisUrl.protocol === "rediss:" ? {} : undefined,
+  maxRetriesPerRequest: null,
 };
 
 export const emailQueue = new Queue("emails", {

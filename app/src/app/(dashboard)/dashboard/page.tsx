@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/client-api";
+import NewProjectModal from "@/components/NewProjectModal";
+import { useCan } from "@/components/CurrentUserContext";
 
 interface Project {
   id: string;
@@ -9,14 +12,27 @@ interface Project {
   description?: string;
   status: string;
   _count?: { tasks: number; sprints: number };
-  members?: { userId: string; role: string }[];
 }
 
 interface Stats {
   totalProjects: number;
   totalTasks: number;
+  openTasks: number;
   inProgress: number;
-  overdue: number;
+  teamMembers: number;
+}
+
+interface Insight {
+  title: string;
+  body: string;
+  action: string;
+}
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,35 +45,41 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState<any>({ totalProjects: 0, totalTasks: 0, inProgress: 0, teamMembers: 0 });
-  const [insights, setInsights] = useState<any[]>([]);
+  const [stats, setStats] = useState<Stats>({ totalProjects: 0, totalTasks: 0, openTasks: 0, inProgress: 0, teamMembers: 0 });
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [insightsLoading, setInsightsLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
+  const canCreate = useCan("project.create");
+
+  const loadData = useCallback(() => {
+    const projectsReq = apiFetch("/api/projects")
+      .then(r => r.json())
+      .then(d => { if (d.data) setProjects(d.data); })
+      .catch(err => console.error("Failed to fetch projects", err))
+      .finally(() => setLoading(false));
+
+    const statsReq = apiFetch("/api/dashboard?insights=false")
+      .then(r => r.json())
+      .then(d => { if (d.data?.stats) setStats(d.data.stats); })
+      .catch(err => console.error("Failed to fetch dashboard stats", err));
+
+    const insightsReq = apiFetch("/api/dashboard")
+      .then(r => r.json())
+      .then(d => { if (d.data?.insights) setInsights(d.data.insights); })
+      .catch(err => console.error("Failed to fetch AI insights", err))
+      .finally(() => setInsightsLoading(false));
+
+    return Promise.all([projectsReq, statsReq, insightsReq]);
+  }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    
-    Promise.all([
-      fetch("/api/projects", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch("/api/dashboard", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-    ])
-      .then(([projectsData, dashboardData]) => {
-        if (projectsData.data) setProjects(projectsData.data);
-        if (dashboardData.data) {
-          if (dashboardData.data.stats) setStats(dashboardData.data.stats);
-          if (dashboardData.data.insights) setInsights(dashboardData.data.insights);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch dashboard data", err);
-        setLoading(false);
-      });
-  }, []);
+    loadData();
+  }, [loadData]);
 
   const STAT_CARDS = [
     { label: "Total Projects", value: stats.totalProjects.toString(), icon: "📁", change: "Active across orgs", color: "var(--brand-400)" },
-    { label: "Open Tasks", value: stats.totalTasks.toString(), icon: "✓", change: "Needs attention", color: "var(--info)" },
+    { label: "Open Tasks", value: stats.openTasks.toString(), icon: "✓", change: "Needs attention", color: "var(--info)" },
     { label: "In Progress", value: stats.inProgress.toString(), icon: "⚡", change: "Currently active", color: "var(--warning)" },
     { label: "Team Members", value: stats.teamMembers.toString(), icon: "👥", change: "Collaborators", color: "var(--success)" },
   ];
@@ -69,13 +91,15 @@ export default function DashboardPage() {
         <div style={{ flex: 1 }}>
           <h2 style={{ fontWeight: 600, fontSize: "1rem" }}>Dashboard</h2>
         </div>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => setShowNewProject(true)}
-          id="new-project-btn"
-        >
-          + New Project
-        </button>
+        {canCreate && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowNewProject(true)}
+            id="new-project-btn"
+          >
+            + New Project
+          </button>
+        )}
       </div>
 
       <div style={{ padding: "24px" }}>
@@ -91,11 +115,11 @@ export default function DashboardPage() {
           alignItems: "center",
         }}>
           <div>
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: 6 }}>
-              Good morning! 👋
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: 6 }} suppressHydrationWarning>
+              {greeting()}! 👋
             </h1>
             <p style={{ color: "var(--text-secondary)" }}>
-              You have <strong style={{ color: "var(--warning)" }}>{stats.totalTasks} active tasks</strong> across <strong style={{ color: "var(--brand-400)" }}>{stats.totalProjects} projects</strong>.
+              You have <strong style={{ color: "var(--warning)" }}>{stats.openTasks} active tasks</strong> across <strong style={{ color: "var(--brand-400)" }}>{stats.totalProjects} projects</strong>.
             </p>
           </div>
           <div style={{ fontSize: "3rem" }}></div>
@@ -150,16 +174,21 @@ export default function DashboardPage() {
               </Link>
             ))}
 
-            {/* New project card */}
-            <button
-              className="card"
-              style={{ border: "2px dashed var(--border)", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 160 }}
-              onClick={() => setShowNewProject(true)}
-              id="new-project-card-btn"
-            >
-              <div style={{ width: 48, height: 48, background: "var(--surface-2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>+</div>
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", fontWeight: 500 }}>New Project</span>
-            </button>
+            {canCreate ? (
+              <button
+                className="card"
+                style={{ border: "2px dashed var(--border)", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 160 }}
+                onClick={() => setShowNewProject(true)}
+                id="new-project-card-btn"
+              >
+                <div style={{ width: 48, height: 48, background: "var(--surface-2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>+</div>
+                <span style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", fontWeight: 500 }}>New Project</span>
+              </button>
+            ) : projects.length === 0 && (
+              <div className="card" style={{ border: "2px dashed var(--border)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160, color: "var(--text-muted)", fontSize: "0.875rem", textAlign: "center" }}>
+                You haven&apos;t been added to a project yet. A manager or admin can add you.
+              </div>
+            )}
           </div>
         )}
 
@@ -178,7 +207,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ))}
-            {loading && insights.length === 0 && (
+            {insightsLoading && insights.length === 0 && (
               <div style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Generating insights with Gemini...</div>
             )}
           </div>
@@ -187,79 +216,8 @@ export default function DashboardPage() {
 
       {/* New Project Modal */}
       {showNewProject && (
-        <NewProjectModal onClose={() => setShowNewProject(false)} />
+        <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadData} />
       )}
     </div>
   );
 }
-
-function NewProjectModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ name: "", description: "", status: "PLANNING" });
-  const [loading, setLoading] = useState(false);
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(form)
-      });
-      
-      if (res.ok) {
-        window.location.reload(); // Quick refresh to show the new project!
-      } else {
-        const errData = await res.json();
-        alert(errData?.error?.message || "Failed to create project");
-      }
-    } catch (err) {
-      alert("Something went wrong");
-    } finally {
-      setLoading(false);
-      onClose();
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ fontWeight: 700, fontSize: "1.25rem" }}>Create New Project</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }}>✕</button>
-        </div>
-
-        <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label className="label" htmlFor="proj-name">Project name *</label>
-            <input id="proj-name" className="input" placeholder="e.g. Website Redesign" value={form.name} onChange={(e) => setForm(p => ({...p, name: e.target.value}))} required />
-          </div>
-          <div>
-            <label className="label" htmlFor="proj-desc">Description</label>
-            <textarea id="proj-desc" className="input" style={{ resize: "vertical", minHeight: 80 }} placeholder="What is this project about?" value={form.description} onChange={(e) => setForm(p => ({...p, description: e.target.value}))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="proj-status">Status</label>
-            <select id="proj-status" className="input" value={form.status} onChange={(e) => setForm(p => ({...p, status: e.target.value}))}>
-              <option value="PLANNING">Planning</option>
-              <option value="ACTIVE">Active</option>
-              <option value="ON_HOLD">On Hold</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1, justifyContent: "center" }}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 1, justifyContent: "center" }} id="create-project-confirm-btn">
-              {loading ? "Creating..." : "Create Project"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-

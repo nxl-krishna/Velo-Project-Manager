@@ -28,7 +28,6 @@ jest.mock("../../lib/redis", () => ({
 }));
 
 import { hashPassword, verifyPassword, signAccessToken, verifyAccessToken, checkLoginRateLimit, isTokenBlocked } from "../../lib/auth";
-import { prisma } from "../../lib/prisma";
 import { redis } from "../../lib/redis";
 
 // Set required env vars for tests
@@ -86,7 +85,7 @@ describe("Auth Library — Unit Tests", () => {
 
     it("should throw on tampered token", () => {
       const token = signAccessToken(payload);
-      const [h, p, s] = token.split(".");
+      const [h, p] = token.split(".");
       expect(() => verifyAccessToken(`${h}.${p}.tampered_sig`)).toThrow();
     });
   });

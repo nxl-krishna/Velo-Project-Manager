@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revokeRefreshTokenFamily, blockAccessToken } from "@/lib/auth";
 import { error, validate, log } from "@/lib/api";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 const schema = z.object({ refreshToken: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
-  const requestId = uuidv4();
+  const requestId = randomUUID();
   try {
     const body = await req.json();
     const v = validate(schema, body, requestId);

@@ -1,0 +1,9 @@
+# Python
+ai-service/venv/
+__pycache__/
+*.pyc
+
+# Env files
+.env
+.env.*
+!.env.example

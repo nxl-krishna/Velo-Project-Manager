@@ -8,10 +8,12 @@ function createRedisClient(): Redis {
   const client = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
     lazyConnect: true,
     family: 4, // Force IPv4 to prevent ECONNRESET on ISPs without IPv6
+    keepAlive: 30000,
+    // Never give up reconnecting: returning null here permanently closes the client
     retryStrategy(times) {
-      if (times > 3) return null;
-      return Math.min(times * 200, 2000);
+      return Math.min(times * 200, 5000);
     },
+    reconnectOnError: (err) => err.message.includes("READONLY") || err.message.includes("ECONNRESET"),
     maxRetriesPerRequest: 3,
   });
 
@@ -60,10 +62,16 @@ export async function cacheDel(...keys: string[]): Promise<void> {
   }
 }
 
-export async function cacheDelPattern(pattern: string): Promise<void> {
+export async function cacheDelPattern(...patterns: string[]): Promise<void> {
   try {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) await redis.del(...keys);
+    for (const pattern of patterns) {
+      let cursor = "0";
+      do {
+        const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+        cursor = next;
+        if (keys.length > 0) await redis.del(...keys);
+      } while (cursor !== "0");
+    }
   } catch {
     // Non-fatal
   }

@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ok, error } from "@/lib/api";
+import { ok } from "@/lib/api";
 
 // GET /api/health
-export async function GET(req: NextRequest) {
+export async function GET() {
+  await connection();
   const checks: Record<string, "ok" | "error"> = {};
 
   // DB check

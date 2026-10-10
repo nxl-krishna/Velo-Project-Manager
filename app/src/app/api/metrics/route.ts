@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ok } from "@/lib/api";
 
 // GET /api/metrics — Prometheus-compatible text format
-export async function GET(req: NextRequest) {
+export async function GET() {
+  await connection();
   const [userCount, projectCount, taskCount, orgCount] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.project.count({ where: { deletedAt: null } }),

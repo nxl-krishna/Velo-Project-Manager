@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 import {
   verifyPassword,
   signAccessToken,
   createRefreshToken,
   checkLoginRateLimit,
+  resetLoginRateLimit,
+  getClientIp,
 } from "@/lib/auth";
 import { error, validate, log } from "@/lib/api";
-import { v4 as uuidv4 } from "uuid";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,10 +18,10 @@ const loginSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const requestId = uuidv4();
+  const requestId = randomUUID();
 
   try {
-    const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+    const ip = getClientIp(req.headers);
     const allowed = await checkLoginRateLimit(ip);
     if (!allowed) {
       return error("RATE_LIMITED", "Too many login attempts. Try again in 15 minutes.", 429, requestId);
@@ -38,6 +40,8 @@ export async function POST(req: NextRequest) {
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return error("UNAUTHORIZED", "Invalid email or password", 401, requestId);
     }
+
+    await resetLoginRateLimit(ip);
 
     const accessToken = signAccessToken({ userId: user.id, email: user.email });
     const refreshToken = await createRefreshToken(user.id);

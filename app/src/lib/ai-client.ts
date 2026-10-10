@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { withAuth, ok, error, validate, ApiContext } from "@/lib/api";
+import { withAuth, ok, error, validate, getParams, ApiContext, RouteContext } from "@/lib/api";
 import { cacheGet, cacheSet } from "@/lib/redis";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
@@ -22,41 +22,33 @@ async function callAIService(endpoint: string, payload: Record<string, unknown>)
     }
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  let attempt = 0;
+  while (true) {
+    try {
+      const res = await fetch(`${AI_SERVICE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+      });
 
-  try {
-    let attempt = 0;
-    while (attempt < 2) {
-      try {
-        const res = await fetch(`${AI_SERVICE_URL}${endpoint}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) throw new Error(`AI service error: ${res.status}`);
-        return await res.json();
-      } catch (err) {
-        attempt++;
-        if (attempt >= 2) throw err;
-        await new Promise((r) => setTimeout(r, 1000 * attempt)); // exponential backoff
+      if (!res.ok) throw new Error(`AI service error: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      attempt++;
+      if (attempt >= 2) {
+        circuitOpen = true;
+        circuitOpenedAt = Date.now();
+        throw err;
       }
+      await new Promise((r) => setTimeout(r, 1000 * attempt)); // exponential backoff
     }
-  } catch (err) {
-    circuitOpen = true;
-    circuitOpenedAt = Date.now();
-    throw err;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
 // POST /api/ai/tasks/[taskId]/summarize
-export const POST_SUMMARIZE = withAuth(async (req: NextRequest, ctx: ApiContext, context?: { params: Promise<Record<string, string>> }) => {
-    const params = await context?.params;
-  const taskId = params?.taskId!;
+export const POST_SUMMARIZE = withAuth(async (req: NextRequest, ctx: ApiContext, context?: RouteContext) => {
+  const { taskId } = await getParams(context);
   const cacheKey = `ai:summary:${taskId}`;
   const cached = await cacheGet(cacheKey);
   if (cached) return ok({ ...cached as Record<string, unknown>, cached: true });
@@ -94,7 +86,7 @@ export const POST_SUMMARIZE = withAuth(async (req: NextRequest, ctx: ApiContext,
     await cacheSet(cacheKey, result, 3600); // Cache AI results for 1h
     return ok(result);
   } catch (err: unknown) {
-    if (err instanceof Error && (err.message === "AI_CIRCUIT_OPEN" || err.name === "AbortError")) {
+    if (err instanceof Error && (err.message === "AI_CIRCUIT_OPEN" || err.name === "AbortError" || err.name === "TimeoutError")) {
       return error("AI_SERVICE_UNAVAILABLE", "AI service is temporarily unavailable. Please try again later.", 503, ctx.requestId);
     }
     return error("INTERNAL_ERROR", "AI summarization failed", 500, ctx.requestId);
@@ -102,9 +94,8 @@ export const POST_SUMMARIZE = withAuth(async (req: NextRequest, ctx: ApiContext,
 });
 
 // POST /api/ai/tasks/[taskId]/suggest-assignee
-export const POST_SUGGEST_ASSIGNEE = withAuth(async (req: NextRequest, ctx: ApiContext, context?: { params: Promise<Record<string, string>> }) => {
-    const params = await context?.params;
-  const taskId = params?.taskId!;
+export const POST_SUGGEST_ASSIGNEE = withAuth(async (req: NextRequest, ctx: ApiContext, context?: RouteContext) => {
+  const { taskId } = await getParams(context);
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, use, useEffect } from "react";
-import io from "socket.io-client";
+import { apiFetch } from "@/lib/client-api";
+import ProjectMembersModal from "@/components/ProjectMembersModal";
 
 // Types
 interface Assignee {
@@ -11,11 +12,13 @@ interface Assignee {
 interface Task {
   id: string;
   title: string;
+  description?: string | null;
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: string;
+  columnId?: string | null;
   labels: string[];
-  dueDate?: string;
-  storyPoints?: number;
+  dueDate?: string | null;
+  storyPoints?: number | null;
   assignees: Assignee[];
   _count?: { comments: number; subTasks: number };
 }
@@ -28,45 +31,6 @@ interface Column {
   tasks: Task[];
 }
 
-// Demo board data
-const DEMO_BOARD: Column[] = [
-  {
-    id: "col-1", name: "Backlog", color: "#64748b", position: 0,
-    tasks: [
-      { id: "t1", title: "Research competitor features", priority: "LOW", status: "BACKLOG", labels: ["research"], assignees: [], storyPoints: 2 },
-      { id: "t2", title: "Design new onboarding flow", priority: "MEDIUM", status: "BACKLOG", labels: ["design", "ux"], assignees: [{ user: { id: "u1", name: "Alice" } }], storyPoints: 5 },
-    ],
-  },
-  {
-    id: "col-2", name: "To Do", color: "#6366f1", position: 1,
-    tasks: [
-      { id: "t3", title: "Implement JWT refresh token rotation", priority: "HIGH", status: "TODO", labels: ["backend", "auth"], assignees: [{ user: { id: "u2", name: "Bob" } }], storyPoints: 8, _count: { comments: 3, subTasks: 2 } },
-      { id: "t4", title: "Add rate limiting middleware", priority: "HIGH", status: "TODO", labels: ["backend", "security"], assignees: [], storyPoints: 5 },
-      { id: "t5", title: "Write API documentation", priority: "MEDIUM", status: "TODO", labels: ["docs"], assignees: [{ user: { id: "u3", name: "Carol" } }], storyPoints: 3 },
-    ],
-  },
-  {
-    id: "col-3", name: "In Progress", color: "#f59e0b", position: 2,
-    tasks: [
-      { id: "t6", title: "Build Kanban board component", priority: "CRITICAL", status: "IN_PROGRESS", labels: ["frontend", "ui"], assignees: [{ user: { id: "u1", name: "Alice" } }, { user: { id: "u4", name: "Dave" } }], storyPoints: 13, dueDate: "2025-10-10", _count: { comments: 7, subTasks: 4 } },
-      { id: "t7", title: "PostgreSQL schema migrations", priority: "HIGH", status: "IN_PROGRESS", labels: ["backend", "db"], assignees: [{ user: { id: "u2", name: "Bob" } }], storyPoints: 5 },
-    ],
-  },
-  {
-    id: "col-4", name: "In Review", color: "#06b6d4", position: 3,
-    tasks: [
-      { id: "t8", title: "Redis caching layer", priority: "MEDIUM", status: "IN_REVIEW", labels: ["backend", "perf"], assignees: [{ user: { id: "u3", name: "Carol" } }], storyPoints: 8, _count: { comments: 2, subTasks: 0 } },
-    ],
-  },
-  {
-    id: "col-5", name: "Done", color: "#22c55e", position: 4,
-    tasks: [
-      { id: "t9", title: "Project setup and scaffolding", priority: "LOW", status: "DONE", labels: ["setup"], assignees: [{ user: { id: "u4", name: "Dave" } }], storyPoints: 3 },
-      { id: "t10", title: "Auth register/login endpoints", priority: "HIGH", status: "DONE", labels: ["backend", "auth"], assignees: [{ user: { id: "u2", name: "Bob" } }], storyPoints: 8 },
-    ],
-  },
-];
-
 const PRIORITY_CONFIG = {
   LOW:      { color: "#22c55e", label: "Low" },
   MEDIUM:   { color: "#06b6d4", label: "Med" },
@@ -74,57 +38,41 @@ const PRIORITY_CONFIG = {
   CRITICAL: { color: "#ef4444", label: "Crit" },
 };
 
-let socket: any;
-
 export default function BoardPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params);
   const [columns, setColumns] = useState<Column[]>([]);
   const [loading, setLoading] = useState(true);
   const [projectName, setProjectName] = useState("");
 
+  const [loadError, setLoadError] = useState("");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTeam, setShowTeam] = useState(false);
+
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    fetch(`/api/projects/${projectId}/board`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    apiFetch(`/api/projects/${projectId}/board`)
       .then(res => res.json())
       .then(data => {
         if (data.data) {
-          if (data.data.columns) setColumns(data.data.columns);
+          if (data.data.columns) {
+            const loadedColumns: Column[] = data.data.columns;
+            setColumns(loadedColumns);
+            const linkedTaskId = new URLSearchParams(window.location.search).get("task");
+            const linkedTask = linkedTaskId && loadedColumns.flatMap((c) => c.tasks).find((t) => t.id === linkedTaskId);
+            if (linkedTask) setSelectedTask(linkedTask);
+          }
           if (data.data.project?.name) setProjectName(data.data.project.name);
+        } else {
+          setLoadError(data.error?.message || "Failed to load board");
         }
-        setLoading(false);
       })
       .catch(err => {
         console.error("Failed to fetch board", err);
-        setLoading(false);
-      });
-
-
-    // Connect to custom Next.js server with Socket.io
-    // socket = io(window.location.origin);
-    
-    // socket.on("connect", () => {
-    //   console.log("[WebSocket] Connected:", socket.id);
-    //   socket.emit("join-project", projectId);
-    // });
-
-    // socket.on("project-event", (event: any) => {
-    //   console.log("[WebSocket] Received real-time event:", event);
-    //   if (event.type === "BOARD_UPDATED") {
-    //     // Here we would ideally refetch the board data or optimally merge `event.moves`
-    //     console.log("Task moved by another user!", event.moves);
-    //   }
-    // });
-
-    // return () => {
-    //   socket.emit("leave-project", projectId);
-    //   socket.disconnect();
-    // };
+        setLoadError("Failed to load board");
+      })
+      .finally(() => setLoading(false));
   }, [projectId]);
   const [dragging, setDragging] = useState<{ taskId: string; fromColId: string } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<Record<string, string>>({});
 
@@ -136,13 +84,8 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
     if (!newTaskTitle.trim()) return;
     setIsCreatingTask(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(`/api/projects/${projectId}/tasks`, {
+      const res = await apiFetch(`/api/projects/${projectId}/tasks`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
         body: JSON.stringify({
           title: newTaskTitle,
           columnId: colId,
@@ -165,7 +108,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
         const err = await res.json();
         alert(err?.error?.message || "Failed to create task");
       }
-    } catch (e) {
+    } catch {
       alert("Error creating task");
     } finally {
       setIsCreatingTask(false);
@@ -176,45 +119,55 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
     setDragging({ taskId, fromColId });
   }
 
-  function handleDrop(toColId: string) {
+  async function handleDrop(toColId: string) {
     if (!dragging) return;
     const { taskId, fromColId } = dragging;
-    if (fromColId === toColId) { setDragging(null); setDragOver(null); return; }
+    setDragging(null);
+    setDragOver(null);
+    if (fromColId === toColId) return;
 
+    const previousColumns = columns;
     setColumns((prev) => {
       const next = prev.map((col) => ({ ...col, tasks: [...col.tasks] }));
-      const fromCol = next.find((c) => c.id === fromColId)!;
-      const toCol = next.find((c) => c.id === toColId)!;
-      const taskIdx = fromCol.tasks.findIndex((t) => t.id === taskId);
+      const fromCol = next.find((c) => c.id === fromColId);
+      const toCol = next.find((c) => c.id === toColId);
+      const taskIdx = fromCol?.tasks.findIndex((t) => t.id === taskId) ?? -1;
+      if (!fromCol || !toCol || taskIdx === -1) return prev;
       const [task] = fromCol.tasks.splice(taskIdx, 1);
       toCol.tasks.push(task);
       return next;
     });
 
-    const token = localStorage.getItem("accessToken");
-    fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ columnId: toColId })
-    }).catch(console.error);
-
-    setDragging(null);
-    setDragOver(null);
+    try {
+      const res = await apiFetch(`/api/projects/${projectId}/tasks/${taskId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ columnId: toColId })
+      });
+      if (!res.ok) throw new Error((await res.json())?.error?.message || "Failed to move task");
+      const { data } = await res.json();
+      setColumns(prev => prev.map(col => ({
+        ...col,
+        tasks: col.tasks.map(t => t.id === data.id ? data : t)
+      })));
+    } catch (err) {
+      console.error(err);
+      setColumns(previousColumns);
+      alert(err instanceof Error ? err.message : "Failed to move task");
+    }
   }
 
   async function triggerAI(taskId: string, type: "summarize" | "assign") {
     setAiLoading(taskId + type);
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(`/api/ai/tasks/${taskId}`, {
+      const res = await apiFetch(`/api/ai/tasks/${taskId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type })
       });
-      if (res.ok) {
-        const d = await res.json();
-        setAiResult((p) => ({ ...p, [taskId + type]: d.data?.result || "No result" }));
-      }
+      const d = await res.json();
+      setAiResult((p) => ({
+        ...p,
+        [taskId + type]: res.ok ? d.data?.result || "No result" : d.error?.message || "AI request failed",
+      }));
     } catch (e) {
       console.error(e);
     } finally {
@@ -225,6 +178,9 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
   const totalTasks = columns.reduce((sum, c) => sum + c.tasks.length, 0);
   const doneTasks = columns.find((c) => c.name === "Done")?.tasks.length ?? 0;
   const progress = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const boardAssignees = [
+    ...new Map(columns.flatMap((c) => c.tasks.flatMap((t) => t.assignees.map((a) => [a.user.id, a.user] as const)))).values(),
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
@@ -241,11 +197,13 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div className="avatar-group">
-            {["A", "B", "C", "D"].map((l) => (
-              <div key={l} className="avatar avatar-sm" style={{ background: `hsl(${l.charCodeAt(0) * 30}, 60%, 40%)` }}>{l}</div>
+            {boardAssignees.slice(0, 4).map((u) => (
+              <div key={u.id} className="avatar avatar-sm" title={u.name} style={{ background: `hsl(${u.name.charCodeAt(0) * 47}, 60%, 40%)` }}>{u.name.charAt(0)}</div>
             ))}
           </div>
-          <button className="btn btn-ghost btn-sm">⚡ Sprint 3</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowTeam(true)} disabled={!!loadError}>
+            👥 Team
+          </button>
           <button 
             className="btn btn-primary btn-sm" 
             id="add-task-btn"
@@ -264,6 +222,8 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
               <div key={i} className="skeleton" style={{ width: 280, height: "100%", borderRadius: 8 }} />
             ))}
           </div>
+        ) : loadError ? (
+          <div style={{ padding: 32, textAlign: "center", color: "var(--text-muted)" }}>{loadError}</div>
         ) : (
           <div className="board-container">
             {columns.map((col) => (
@@ -336,7 +296,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
                         {task._count?.subTasks ? <span>⊞ {task._count.subTasks}</span> : null}
                         {task.storyPoints ? <span className="badge badge-gray" style={{ padding: "1px 5px" }}>{task.storyPoints}pt</span> : null}
                         {task.dueDate && (
-                          <span style={{ color: "var(--danger)" }}>📅 {new Date(task.dueDate).toLocaleDateString("en", { month: "short", day: "numeric" })}</span>
+                          <span style={{ color: "var(--danger)" }}>📅 {new Date(task.dueDate).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</span>
                         )}
                       </div>
 
@@ -438,6 +398,8 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
         )}
       </div>
 
+      {showTeam && <ProjectMembersModal projectId={projectId} onClose={() => setShowTeam(false)} />}
+
       {/* Task detail modal */}
       {selectedTask && (
         <TaskDetailModal 
@@ -462,10 +424,8 @@ function TaskDetailModal({ task, projectId, onClose, onUpdateTask }: { task: Tas
 
   const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value ? new Date(e.target.value).toISOString() : null;
-    const token = localStorage.getItem("accessToken");
-    const res = await fetch(`/api/projects/${projectId}/tasks/${task.id}`, {
+    const res = await apiFetch(`/api/projects/${projectId}/tasks/${task.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ dueDate: newDate })
     });
     if (res.ok) {
@@ -519,7 +479,7 @@ function TaskDetailModal({ task, projectId, onClose, onUpdateTask }: { task: Tas
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 600, marginBottom: 8 }}>Description</div>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", lineHeight: 1.7 }}>
-            No description provided yet. Click to add one.
+            {task.description || "No description provided yet."}
           </p>
         </div>
 

@@ -1,11 +1,9 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { prisma } from "./prisma";
 import { redis } from "./redis";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_DAYS = 7;
 
@@ -29,12 +27,22 @@ export async function verifyPassword(
 }
 
 // ─── JWT helpers ──────────────────────────────────────────────
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET is not configured");
+  return secret;
+}
+
 export function signAccessToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_TTL });
+  return jwt.sign(
+    { userId: payload.userId, email: payload.email },
+    getJwtSecret(),
+    { expiresIn: ACCESS_TOKEN_TTL }
+  );
 }
 
 export function verifyAccessToken(token: string): JWTPayload {
-  return jwt.verify(token, JWT_SECRET) as JWTPayload;
+  return jwt.verify(token, getJwtSecret()) as JWTPayload;
 }
 
 // ─── Refresh token ────────────────────────────────────────────
@@ -42,8 +50,8 @@ export async function createRefreshToken(
   userId: string,
   family?: string
 ): Promise<string> {
-  const token = uuidv4();
-  const tokenFamily = family ?? uuidv4();
+  const token = randomUUID();
+  const tokenFamily = family ?? randomUUID();
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
@@ -121,18 +129,46 @@ export async function blockAccessToken(
   token: string,
   ttlSeconds = 900
 ): Promise<void> {
-  await redis.set(`blocklist:${token}`, "1", "EX", ttlSeconds);
+  try {
+    await redis.set(`blocklist:${token}`, "1", "EX", ttlSeconds);
+  } catch (err) {
+    console.warn("[Auth] Redis unavailable, access token not blocklisted:", (err as Error).message);
+  }
 }
 
+// Fails open when Redis is down: a logged-out token stays valid until it expires (max 15 min)
 export async function isTokenBlocked(token: string): Promise<boolean> {
-  const result = await redis.get(`blocklist:${token}`);
-  return result !== null;
+  try {
+    const result = await redis.get(`blocklist:${token}`);
+    return result !== null;
+  } catch (err) {
+    console.warn("[Auth] Redis unavailable, skipping blocklist check:", (err as Error).message);
+    return false;
+  }
 }
 
 // ─── Rate limiting ────────────────────────────────────────────
-export async function checkLoginRateLimit(ip: string): Promise<boolean> {
-  const key = `ratelimit:login:${ip}`;
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, 900); // 15 min window
-  return count <= 5; // 5 attempts per 15 min
+// Fails open when Redis is down so an outage doesn't lock everyone out
+export async function checkLoginRateLimit(ip: string, scope = "login"): Promise<boolean> {
+  const key = `ratelimit:${scope}:${ip}`;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 900); // 15 min window
+    return count <= 5; // 5 attempts per 15 min
+  } catch (err) {
+    console.warn("[Auth] Redis unavailable, skipping rate limit:", (err as Error).message);
+    return true;
+  }
+}
+
+export async function resetLoginRateLimit(ip: string, scope = "login"): Promise<void> {
+  try {
+    await redis.del(`ratelimit:${scope}:${ip}`);
+  } catch {
+    // Non-fatal: the counter expires on its own
+  }
+}
+
+export function getClientIp(headers: Headers): string {
+  return headers.get("x-forwarded-for")?.split(",")[0].trim() || headers.get("x-real-ip") || "unknown";
 }

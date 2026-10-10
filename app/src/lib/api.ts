@@ -1,18 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, connection } from "next/server";
+import { randomUUID } from "crypto";
+import type { Prisma, Role } from "@prisma/client";
+import type { ZodType } from "zod";
 import { verifyAccessToken, isTokenBlocked, JWTPayload } from "./auth";
 import { prisma } from "./prisma";
-import { v4 as uuidv4 } from "uuid";
 
 export type ApiContext = {
   user: JWTPayload & { role?: string };
   requestId: string;
 };
 
+export type RouteContext = { params: Promise<Record<string, string>> };
+
 export type ApiHandler = (
   req: NextRequest,
   ctx: ApiContext,
-  context?: { params: Promise<Record<string, string>> }
+  context?: RouteContext
 ) => Promise<NextResponse>;
+
+export async function getParams(context?: RouteContext): Promise<Record<string, string>> {
+  return (await context?.params) ?? {};
+}
 
 // ─── API Response helpers ──────────────────────────────────────
 export function ok(data: unknown, status = 200): NextResponse {
@@ -41,8 +49,10 @@ export function error(
 
 // ─── Auth middleware ───────────────────────────────────────────
 export function withAuth(handler: ApiHandler) {
-  return async (req: NextRequest, context?: { params: Promise<Record<string, string>> }) => {
-    const requestId = uuidv4();
+  return async (req: NextRequest, context?: RouteContext) => {
+    // Opt out of prerendering before the try block so Next's internal bail-out isn't swallowed as an API error
+    await connection();
+    const requestId = randomUUID();
 
     try {
       const authHeader = req.headers.get("authorization");
@@ -61,13 +71,16 @@ export function withAuth(handler: ApiHandler) {
       const payload = verifyAccessToken(token);
       const ctx: ApiContext = { user: payload, requestId };
 
-      return handler(req, ctx, context);
+      return await handler(req, ctx, context);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "TokenExpiredError") {
         return error("UNAUTHORIZED", "Token expired", 401, requestId);
       }
       if (err instanceof Error && err.name === "JsonWebTokenError") {
         return error("UNAUTHORIZED", "Invalid token", 401, requestId);
+      }
+      if (err instanceof SyntaxError) {
+        return error("BAD_REQUEST", "Invalid JSON body", 400, requestId);
       }
       console.error("[API Error]", { requestId, err });
       return error("INTERNAL_ERROR", "An unexpected error occurred", 500, requestId);
@@ -77,7 +90,7 @@ export function withAuth(handler: ApiHandler) {
 
 // ─── RBAC middleware ───────────────────────────────────────────
 export function withRole(roles: string[], handler: ApiHandler): ApiHandler {
-  return async (req: NextRequest, ctx: ApiContext, context?: { params: Promise<Record<string, string>> }) => {
+  return async (req: NextRequest, ctx: ApiContext, context?: RouteContext) => {
     const requestId = ctx.requestId;
     if (!ctx.user.role || !roles.includes(ctx.user.role)) {
       return error(
@@ -91,6 +104,35 @@ export function withRole(roles: string[], handler: ApiHandler): ApiHandler {
   };
 }
 
+// ─── Project access ────────────────────────────────────────────
+// Returns null when the project doesn't exist; role is null when the user has no access.
+// Effective project role: workspace admins are ADMIN everywhere in their workspace; otherwise the
+// user must be on the project (or own it) and gets their workspace role, with owners at least MANAGER.
+export async function getProjectAccess(projectId: string, userId: string) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      orgId: true,
+      ownerId: true,
+      members: { where: { userId }, select: { role: true } },
+      org: { select: { members: { where: { userId }, select: { role: true } } } },
+    },
+  });
+  if (!project) return null;
+
+  const orgRole: Role | null = project.org.members[0]?.role ?? null;
+  const isOwner = project.ownerId === userId;
+  const onProject = isOwner || project.members.length > 0;
+
+  let role: Role | null = null;
+  if (orgRole === "ADMIN") role = "ADMIN";
+  else if (orgRole && onProject) role = isOwner ? "MANAGER" : orgRole;
+
+  return { project, role, orgRole, isOwner };
+}
+
 // ─── Audit logging ─────────────────────────────────────────────
 export async function audit(
   userId: string,
@@ -101,7 +143,7 @@ export async function audit(
 ): Promise<void> {
   try {
     await prisma.auditLog.create({
-      data: { userId, action, resource, resourceId, metadata: metadata as any },
+      data: { userId, action, resource, resourceId, metadata: metadata as Prisma.InputJsonValue },
     });
   } catch {
     // Non-fatal
@@ -130,10 +172,8 @@ export function log(
 }
 
 // ─── Zod validation helper ──────────────────────────────────────
-import { ZodSchema } from "zod";
-
-export function validate<T>(schema: ZodSchema<T>, data: unknown, requestId: string): 
-  | { success: true; data: T } 
+export function validate<T>(schema: ZodType<T>, data: unknown, requestId: string):
+  | { success: true; data: T }
   | { success: false; response: NextResponse } {
   const result = schema.safeParse(data);
   if (!result.success) {
