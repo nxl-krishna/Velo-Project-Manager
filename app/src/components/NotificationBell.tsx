@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { apiFetch } from "@/lib/client-api";
+import { AtSign, Bell, Clock, MessageSquare, Pin, RefreshCw, UserPlus, type LucideIcon } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -18,13 +19,13 @@ interface Notification {
 
 const POLL_INTERVAL_MS = 60000;
 
-const TYPE_ICONS: Record<string, string> = {
-  ASSIGNMENT: "📌",
-  STATUS_CHANGE: "🔄",
-  DUE_DATE_REMINDER: "⏰",
-  INVITE: "👋",
-  MENTION: "💬",
-  COMMENT: "💬",
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  ASSIGNMENT: Pin,
+  STATUS_CHANGE: RefreshCw,
+  DUE_DATE_REMINDER: Clock,
+  INVITE: UserPlus,
+  MENTION: AtSign,
+  COMMENT: MessageSquare,
 };
 
 export default function NotificationBell() {
@@ -94,12 +95,12 @@ export default function NotificationBell() {
       <button
         onClick={handleOpen}
         aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
-        style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)", position: "relative" }}
+        style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)", position: "relative", display: "flex", alignItems: "center", padding: 4 }}
       >
-        🔔
+        <Bell size={18} strokeWidth={1.75} />
         {unreadCount > 0 && (
           <span style={{
-            position: "absolute", top: -6, right: -8, minWidth: 16, height: 16, padding: "0 4px",
+            position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, padding: "0 4px",
             background: "var(--danger)", color: "white", borderRadius: 8, fontSize: "0.625rem", fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
           }}>
@@ -129,14 +130,16 @@ export default function NotificationBell() {
                 You&apos;re all caught up.
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n) => {
+                const Icon = TYPE_ICONS[n.type] ?? Bell;
+                return (
                 <div
                   key={n.id}
                   onClick={() => handleClickNotification(n)}
                   className="card-hover"
                   style={{ display: "flex", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: n.read ? "transparent" : "rgba(99, 102, 241, 0.05)", cursor: n.link ? "pointer" : "default" }}
                 >
-                  <span style={{ fontSize: "1rem", lineHeight: 1.4 }}>{TYPE_ICONS[n.type] ?? "🔔"}</span>
+                  <Icon size={16} strokeWidth={1.75} style={{ marginTop: 2, flexShrink: 0, color: "var(--text-secondary)" }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontWeight: n.read ? 500 : 600, fontSize: "0.875rem", color: "var(--text-primary)" }}>{n.title}</span>
@@ -148,7 +151,8 @@ export default function NotificationBell() {
                   </div>
                   {!n.read && <span style={{ width: 8, height: 8, marginTop: 6, background: "var(--brand-500)", borderRadius: "50%", flexShrink: 0 }} />}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
           <div style={{ padding: "8px", textAlign: "center", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>

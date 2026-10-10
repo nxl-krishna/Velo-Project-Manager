@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { apiFetch } from "@/lib/client-api";
 import type { Analytics } from "@/lib/analytics";
+import { ArrowUpRight, RefreshCw } from "lucide-react";
 
 const POLL_MS = 60_000;
 
@@ -261,7 +262,7 @@ export default function AnalyticsPage() {
                     onClick={() => { setInsightsLoading(true); loadInsights(true); }}
                     style={{ fontSize: "0.75rem", color: "var(--brand-400)" }}
                   >
-                    {insightsLoading ? "Analyzing..." : "↻ Refresh"}
+                    {insightsLoading ? "Analyzing..." : <><RefreshCw size={12} /> Refresh</>}
                   </button>
                 </div>
                 {insightsLoading && insights.length === 0 ? (
@@ -296,7 +297,7 @@ export default function AnalyticsPage() {
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                ↗ {s.title}
+                                <ArrowUpRight size={12} style={{ verticalAlign: "-2px" }} /> {s.title}
                               </Link>
                             ))}
                           </div>

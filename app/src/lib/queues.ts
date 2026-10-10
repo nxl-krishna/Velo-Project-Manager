@@ -118,7 +118,7 @@ export function dueDateReminderEmail(
 ): EmailJobData {
   return {
     to: "", // filled by caller
-    subject: `⏰ Task due soon: ${taskTitle}`,
+    subject: `Task due soon: ${taskTitle}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #6366f1;">Upcoming Deadline Reminder</h2>

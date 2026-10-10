@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import { apiFetch } from "@/lib/client-api";
 
 export default function NewProjectModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
@@ -38,7 +39,7 @@ export default function NewProjectModal({ onClose, onCreated }: { onClose: () =>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <h2 style={{ fontWeight: 700, fontSize: "1.25rem" }}>Create New Project</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }}>✕</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }} aria-label="Close"><X size={16} /></button>
         </div>
 
         <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>

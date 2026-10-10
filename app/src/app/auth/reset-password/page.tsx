@@ -10,7 +10,7 @@ export default function ResetPasswordPage() {
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px", background: "var(--surface-bg)" }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40, textDecoration: "none", color: "inherit" }}>
-          <VeloLogo size={48} />
+          <VeloLogo size={32} />
         </Link>
         <Suspense fallback={<p style={{ color: "var(--text-muted)" }}>Loading...</p>}>
           <ResetPasswordForm />

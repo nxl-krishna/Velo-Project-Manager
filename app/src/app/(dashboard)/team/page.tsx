@@ -6,6 +6,7 @@ import type { Role } from "@prisma/client";
 import { apiFetch } from "@/lib/client-api";
 import { can, canManageRole, ROLE_LABEL, ROLES, type Permission } from "@/lib/permissions";
 import ProjectMembersModal, { Avatar, ROLE_BADGE } from "@/components/ProjectMembersModal";
+import { X } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -281,7 +282,7 @@ function InviteMemberModal({
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <h2 style={{ fontWeight: 700, fontSize: "1.25rem" }}>Invite Member</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }}>✕</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }} aria-label="Close"><X size={16} /></button>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: 20 }}>
           They need a Velo account. They only get access to the projects you add them to.

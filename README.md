@@ -1,95 +1,100 @@
 <div align="center">
-  <img src="./logo/Velo.png" alt="Velo Logo" width="120" />
-  <h1>Velo Project Management</h1>
-  <p><strong>A Next-Generation, AI-Powered Workspace for High-Velocity Teams</strong></p>
+  <img src="./logo/Velo.png" alt="Velo" width="220" />
+  <h1>Velo</h1>
+  <p><strong>AI-assisted project management for engineering teams</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+    <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />
     <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
-    <img src="https://img.shields.io/badge/Python-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+    <img src="https://img.shields.io/badge/Redis-Upstash-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
     <img src="https://img.shields.io/badge/Google-Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
-    <img src="https://img.shields.io/badge/Azure-PostgreSQL-0089D6?style=for-the-badge&logo=microsoft-azure&logoColor=white" alt="Azure" />
   </p>
 </div>
 
 ---
 
-## ⚡ Overview
+## Overview
 
-**Velo** is a premium, full-stack project management platform that combines traditional Kanban workflows with cutting-edge AI intelligence. Built from the ground up for modern engineering and design teams, it provides smart task assignment, deadline predictions, and AI-driven sprint planning directly inside your workspace.
+Velo is a full-stack project management platform: Kanban boards, sprints, a team directory, a calendar, and analytics, with Google Gemini providing task summaries, assignee suggestions, and retrieval-augmented (RAG) insights grounded in your real project data.
 
-Designed with a strict, professional light-mode aesthetic, Velo ensures that your work is always the central focus without visual clutter.
+## Features
 
-## ✨ Features
+- **Kanban boards**: drag-and-drop tasks with optimistic updates.
+- **Role-based access control**: Admin, Manager, and Engineer roles, enforced on every API request.
+  - Admins see every project and team, change roles, and remove people.
+  - Managers create projects and choose which engineers work on them.
+  - Engineers only see the projects they've been added to.
+- **AI insights (RAG)**: tasks and comments are embedded with `gemini-embedding-2` into pgvector. The index syncs incrementally every minute and only re-embeds rows that changed. Insights cite the tasks they're based on.
+- **Live analytics**: real data. The page polls every 60 seconds and only downloads the sections that changed.
+- **Notifications**: in-app notifications for assignments, status changes, invites, and due dates.
+- **Password reset**: single-use emailed links that expire after 30 minutes, sent over SMTP (Gmail supported).
 
-- 🧠 **AI-Powered Automation**: Native integration with Google Gemini via a decoupled Python microservice. AI parses tasks, suggests assignees, and summarizes projects automatically.
-- 📋 **Kanban Boards**: Drag-and-drop task management powered by optimistic UI for zero-latency interactions.
-- 🔐 **Role-Based Access Control**: Multi-tiered permissions (Admin, Manager, User) securely enforced at both the API and database level.
-- 🎨 **Premium Aesthetics**: Glassmorphism, smooth micro-animations, and a highly polished UI.
-- ☁️ **Cloud Native**: Designed to be deployed seamlessly on **Azure App Services**, **Azure PostgreSQL Flexible Server**, and **Azure Cache for Redis**.
-
-## 🏗 Architecture
-
-Velo utilizes a robust microservices architecture designed for extreme scalability:
+## Architecture
 
 ```mermaid
 graph TD;
-    Client((Client Browser)) --> NextJS[Next.js App Router Frontend]
-    NextJS --> NextAPI[Next.js Serverless API]
-    NextAPI --> Prisma[(Azure PostgreSQL Flexible Server)]
-    NextAPI --> Upstash[(Azure Cache for Redis)]
-    NextAPI -- HTTP --> Python[FastAPI AI Microservice]
-    Python --> Gemini[Google Gemini AI]
+    Client((Browser)) --> NextJS[Next.js App Router]
+    NextJS --> API[Route Handlers]
+    API --> Prisma[(PostgreSQL + pgvector)]
+    API --> Redis[(Redis cache / rate limits)]
+    API --> Gemini[Google Gemini]
+    API --> SMTP[SMTP email]
 ```
 
-## 🚀 Quick Start (Local Development)
+## Quick start
 
 ### Prerequisites
 - Node.js 20+
-- Python 3.12+
-- An Azure PostgreSQL Flexible Server instance (or local PostgreSQL)
-- Upstash/Azure Redis instance
-- Google Gemini API Key
+- PostgreSQL with the `vector` extension (Supabase works)
+- Redis (Upstash works)
+- A Google Gemini API key
 
-### 1. Database & Environment Setup
-Clone the repository and set up your `.env` variables in both `/app` and `/ai-service` using the provided `.env.example` templates.
-
-Make sure your Azure PostgreSQL Connection string includes `?sslmode=require` and (if using pooler) `?pgbouncer=true`.
-
-### 2. Start the Frontend
+### 1. Configure environment
 ```bash
 cd app
+cp .env.example .env
+```
+Fill in `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, the Redis variables, and `GEMINI_API_KEY`.
+
+For password-reset emails with Gmail:
+1. Turn on 2-Step Verification for the Gmail account.
+2. Create an App Password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+3. Set `SMTP_USER` and `EMAIL_FROM` to that Gmail address, and `SMTP_PASS` to the App Password.
+
+If `SMTP_PASS` is empty in development, reset links are printed to the server log.
+
+### 2. Run
+```bash
 npm install
 npx prisma db push
 npm run dev
 ```
+The app runs at `http://localhost:3000`.
 
-### 3. Start the AI Microservice
+### 3. Checks
 ```bash
-cd ai-service
-python -m venv venv
-
-# Windows
-.\venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
-python main.py
+npx tsc --noEmit -p .
+npx eslint src
+npx jest src/__tests__
 ```
 
-The app will now be running on `http://localhost:3000` and the AI backend on `http://localhost:8000`.
+## Deployment (Vercel)
 
-## ☁️ Azure Deployment
+1. Import the repo and set the root directory to `app`.
+2. Add every variable from `.env.example` under **Settings → Environment Variables**. Set `NEXT_PUBLIC_APP_URL` to your production URL, and mark `SMTP_PASS` as Sensitive.
+3. Redeploy after changing environment variables.
 
-Velo is engineered to be perfectly hosted on **Microsoft Azure**:
-1. **Database**: Azure Database for PostgreSQL - Flexible Server (Version 16).
-2. **Frontend**: Azure App Service (Node.js/Linux) or Azure Static Web Apps.
-3. **AI Backend**: Azure Container Apps or Azure App Service (Python 3.12).
-4. **Caching**: Azure Cache for Redis.
+The 60-second RAG sync runs inside a long-lived Node process. On serverless hosts it won't run reliably, so use a scheduled job there instead.
 
----
-<div align="center">
-  <p>Built with ❤️ by the Velo Team</p>
-</div>
+## Branding
+
+The source logo is `logo/Velo.png`. The app uses assets generated from it:
+- `app/public/velo-logo.png`: the wordmark with a transparent background.
+- `app/public/velo-logo-light.png`: a version for dark backgrounds.
+- `app/public/velo-mark.png`: the "V" mark on its own.
+- `app/src/app/icon.png`, `apple-icon.png`, `favicon.ico`: browser and home-screen icons.
+- `app/src/app/opengraph-image.png`: the link-preview image.
+
+UI icons come from [lucide-react](https://lucide.dev).

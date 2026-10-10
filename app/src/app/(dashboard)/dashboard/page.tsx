@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/client-api";
 import NewProjectModal from "@/components/NewProjectModal";
 import { useCan } from "@/components/CurrentUserContext";
+import { ArrowRight, Folder, Loader, Plus, SquareCheckBig, Timer, Users } from "lucide-react";
 
 interface Project {
   id: string;
@@ -78,10 +79,10 @@ export default function DashboardPage() {
   }, [loadData]);
 
   const STAT_CARDS = [
-    { label: "Total Projects", value: stats.totalProjects.toString(), icon: "📁", change: "Active across orgs", color: "var(--brand-400)" },
-    { label: "Open Tasks", value: stats.openTasks.toString(), icon: "✓", change: "Needs attention", color: "var(--info)" },
-    { label: "In Progress", value: stats.inProgress.toString(), icon: "⚡", change: "Currently active", color: "var(--warning)" },
-    { label: "Team Members", value: stats.teamMembers.toString(), icon: "👥", change: "Collaborators", color: "var(--success)" },
+    { label: "Total Projects", value: stats.totalProjects.toString(), icon: Folder, change: "Active across orgs", color: "var(--brand-400)" },
+    { label: "Open Tasks", value: stats.openTasks.toString(), icon: SquareCheckBig, change: "Needs attention", color: "var(--info)" },
+    { label: "In Progress", value: stats.inProgress.toString(), icon: Loader, change: "Currently active", color: "var(--warning)" },
+    { label: "Team Members", value: stats.teamMembers.toString(), icon: Users, change: "Collaborators", color: "var(--success)" },
   ];
 
   return (
@@ -116,13 +117,12 @@ export default function DashboardPage() {
         }}>
           <div>
             <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: 6 }} suppressHydrationWarning>
-              {greeting()}! 👋
+              {greeting()}
             </h1>
             <p style={{ color: "var(--text-secondary)" }}>
               You have <strong style={{ color: "var(--warning)" }}>{stats.openTasks} active tasks</strong> across <strong style={{ color: "var(--brand-400)" }}>{stats.totalProjects} projects</strong>.
             </p>
           </div>
-          <div style={{ fontSize: "3rem" }}></div>
         </div>
 
         {/* Stats */}
@@ -131,7 +131,7 @@ export default function DashboardPage() {
             <div key={s.label} className="stat-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: "1.5rem" }}>{s.icon}</div>
+                <s.icon size={20} strokeWidth={1.75} style={{ color: s.color, opacity: 0.85 }} />
               </div>
               <div className="stat-label">{s.label}</div>
               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>{s.change}</div>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
         {/* Projects */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 style={{ fontWeight: 600, fontSize: "1.125rem" }}>Your Projects</h2>
-          <Link href="/projects" style={{ fontSize: "0.875rem", color: "var(--brand-400)", textDecoration: "none" }}>View all →</Link>
+          <Link href="/projects" style={{ fontSize: "0.875rem", color: "var(--brand-400)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>View all <ArrowRight size={14} /></Link>
         </div>
 
         {loading ? (
@@ -157,8 +157,8 @@ export default function DashboardPage() {
               <Link key={p.id} href={`/projects/${p.id}/board`} style={{ textDecoration: "none" }}>
                 <div className="card card-hover" style={{ cursor: "pointer", height: "100%" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                    <div style={{ width: 40, height: 40, background: "var(--brand-700)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
-                      📁
+                    <div style={{ width: 40, height: 40, background: "var(--brand-700)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                      <Folder size={20} strokeWidth={1.75} />
                     </div>
                     <span className={`badge ${STATUS_COLORS[p.status] || "badge-gray"}`}>{p.status.replace("_", " ")}</span>
                   </div>
@@ -167,8 +167,8 @@ export default function DashboardPage() {
                     {p.description}
                   </p>
                   <div style={{ display: "flex", gap: 16, fontSize: "0.8125rem", color: "var(--text-muted)" }}>
-                    <span>✓ {p._count?.tasks ?? 0} tasks</span>
-                    <span>⚡ {p._count?.sprints ?? 0} sprints</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><SquareCheckBig size={14} /> {p._count?.tasks ?? 0} tasks</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Timer size={14} /> {p._count?.sprints ?? 0} sprints</span>
                   </div>
                 </div>
               </Link>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 onClick={() => setShowNewProject(true)}
                 id="new-project-card-btn"
               >
-                <div style={{ width: 48, height: 48, background: "var(--surface-2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>+</div>
+                <div style={{ width: 48, height: 48, background: "var(--surface-2)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}><Plus size={22} /></div>
                 <span style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", fontWeight: 500 }}>New Project</span>
               </button>
             ) : projects.length === 0 && (
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                 <div style={{ color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>{insight.body}</div>
                 <Link href="/projects" style={{ textDecoration: "none" }}>
                   <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, padding: "6px 0", color: "var(--brand-400)" }}>
-                    {insight.action} →
+                    {insight.action} <ArrowRight size={14} />
                   </button>
                 </Link>
               </div>

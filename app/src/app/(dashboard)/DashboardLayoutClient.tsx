@@ -9,31 +9,37 @@ import { CurrentUserContext, type CurrentUser } from "@/components/CurrentUserCo
 import { ROLE_BADGE } from "@/components/ProjectMembersModal";
 import { apiFetch, clearSession } from "@/lib/client-api";
 import { ROLE_LABEL } from "@/lib/permissions";
+import {
+  ChartColumn, CalendarDays, Folder, FolderKanban, LayoutDashboard, LogOut, PanelLeft,
+  Search, Settings, SquareCheckBig, Users, type LucideIcon,
+} from "lucide-react";
 
-const SEARCHABLE_PAGES = [
-  { icon: "⌂", title: "Dashboard", subtitle: "Page", href: "/dashboard" },
-  { icon: "◫", title: "Projects", subtitle: "Page", href: "/projects" },
-  { icon: "✓", title: "My Tasks", subtitle: "Page", href: "/tasks" },
-  { icon: "👥", title: "Team Directory", subtitle: "Page", href: "/team" },
-  { icon: "📅", title: "Calendar", subtitle: "Page", href: "/calendar" },
-  { icon: "📊", title: "Analytics & Reports", subtitle: "Page", href: "/analytics" },
-  { icon: "⚙", title: "Settings", subtitle: "Page", href: "/settings" },
+type NavItem = { icon: LucideIcon; title: string; subtitle: string; href: string };
+
+const SEARCHABLE_PAGES: NavItem[] = [
+  { icon: LayoutDashboard, title: "Dashboard", subtitle: "Page", href: "/dashboard" },
+  { icon: FolderKanban, title: "Projects", subtitle: "Page", href: "/projects" },
+  { icon: SquareCheckBig, title: "My Tasks", subtitle: "Page", href: "/tasks" },
+  { icon: Users, title: "Team Directory", subtitle: "Page", href: "/team" },
+  { icon: CalendarDays, title: "Calendar", subtitle: "Page", href: "/calendar" },
+  { icon: ChartColumn, title: "Analytics & Reports", subtitle: "Page", href: "/analytics" },
+  { icon: Settings, title: "Settings", subtitle: "Page", href: "/settings" },
 ];
 
 const NAV_MAIN = [
-  { href: "/dashboard", icon: "⌂", label: "Dashboard" },
-  { href: "/projects", icon: "◫", label: "Projects" },
-  { href: "/tasks", icon: "✓", label: "My Tasks" },
-  { href: "/team", icon: "👥", label: "Team" },
-  { href: "/calendar", icon: "📅", label: "Calendar" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/projects", icon: FolderKanban, label: "Projects" },
+  { href: "/tasks", icon: SquareCheckBig, label: "My Tasks" },
+  { href: "/team", icon: Users, label: "Team" },
+  { href: "/calendar", icon: CalendarDays, label: "Calendar" },
 ];
 
 const NAV_REPORTS = [
-  { href: "/analytics", icon: "📊", label: "Reports & Analytics" },
+  { href: "/analytics", icon: ChartColumn, label: "Reports & Analytics" },
 ];
 
 const NAV_BOTTOM = [
-  { href: "/settings", icon: "⚙", label: "Settings" },
+  { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
@@ -43,7 +49,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [projectItems, setProjectItems] = useState<typeof SEARCHABLE_PAGES>([]);
+  const [projectItems, setProjectItems] = useState<NavItem[]>([]);
 
   const searchableItems = [...SEARCHABLE_PAGES, ...projectItems];
   const filteredSearch = searchableItems.filter(item =>
@@ -79,7 +85,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
       .then((d) => {
         if (Array.isArray(d.data)) {
           setProjectItems(d.data.map((p: { id: string; name: string }) => ({
-            icon: "📁", title: p.name, subtitle: "Project", href: `/projects/${p.id}/board`,
+            icon: Folder, title: p.name, subtitle: "Project", href: `/projects/${p.id}/board`,
           })));
         }
       })
@@ -123,10 +129,10 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
           {/* Workspace Switcher / Logo */}
           <div style={{ padding: "16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Link href="/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
-              <VeloLogo size={36} />
+              <VeloLogo size={24} />
             </Link>
             <button className="btn-ghost" onClick={() => setIsSidebarOpen(false)} style={{ padding: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)" }}>
-              ◫
+              <PanelLeft size={17} strokeWidth={1.75} />
             </button>
           </div>
 
@@ -155,7 +161,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
                 href={item.href}
                 className={`sidebar-item ${pathname === item.href || pathname.startsWith(item.href + "/") ? "active" : ""}`}
               >
-                <span style={{ fontSize: "1.125rem", width: 20, textAlign: "center", opacity: 0.7 }}>{item.icon}</span>
+                <item.icon size={17} strokeWidth={1.75} style={{ opacity: 0.75, flexShrink: 0 }} />
                 {item.label}
               </Link>
             ))}
@@ -169,7 +175,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
                 href={item.href}
                 className={`sidebar-item ${pathname === item.href || pathname.startsWith(item.href + "/") ? "active" : ""}`}
               >
-                <span style={{ fontSize: "1.125rem", width: 20, textAlign: "center", opacity: 0.7 }}>{item.icon}</span>
+                <item.icon size={17} strokeWidth={1.75} style={{ opacity: 0.75, flexShrink: 0 }} />
                 {item.label}
               </Link>
             ))}
@@ -183,12 +189,12 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
                 href={item.href}
                 className={`sidebar-item ${pathname === item.href || pathname.startsWith(item.href + "/") ? "active" : ""}`}
               >
-                <span style={{ fontSize: "1.125rem", width: 20, textAlign: "center", opacity: 0.7 }}>{item.icon}</span>
+                <item.icon size={17} strokeWidth={1.75} style={{ opacity: 0.75, flexShrink: 0 }} />
                 {item.label}
               </Link>
             ))}
             <button onClick={handleLogout} className="sidebar-item" style={{ color: "var(--text-secondary)", marginTop: 2, width: "100%", display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", cursor: "pointer" }}>
-              <span style={{ fontSize: "1.125rem", width: 20, textAlign: "center", opacity: 0.7 }}>🚪</span> Sign out
+              <LogOut size={17} strokeWidth={1.75} style={{ opacity: 0.75, flexShrink: 0 }} /> Sign out
             </button>
           </div>
         </aside>
@@ -202,7 +208,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {!isSidebarOpen && (
               <button className="btn-ghost" onClick={() => setIsSidebarOpen(true)} style={{ padding: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
-                ◫
+                <PanelLeft size={17} strokeWidth={1.75} />
               </button>
             )}
 
@@ -218,7 +224,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
               style={{ position: "relative", cursor: "pointer" }}
               onClick={() => setIsSearchOpen(true)}
             >
-              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "0.875rem" }}>🔍</span>
+              <Search size={14} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
               <div style={{ width: 240, padding: "6px 12px 6px 32px", fontSize: "0.8125rem", borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface-1)", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span>Search workspace...</span>
                 <span style={{ fontSize: "0.625rem", border: "1px solid var(--border)", padding: "2px 4px", borderRadius: 4 }}>Ctrl K</span>
@@ -239,7 +245,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
         <div className="modal-overlay" onClick={closeSearch} style={{ alignItems: "flex-start", paddingTop: "10vh" }}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ padding: 0, overflow: "hidden", maxWidth: 600 }}>
             <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: "1.25rem", color: "var(--text-muted)" }}>🔍</span>
+              <Search size={20} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <input
                 autoFocus
                 value={searchQuery}
@@ -265,7 +271,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
                         router.push(res.href);
                       }}
                     >
-                      <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--surface-1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>{res.icon}</div>
+                      <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--surface-1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", color: "var(--text-secondary)" }}><res.icon size={16} strokeWidth={1.75} /></div>
                       <div>
                         <div style={{ fontWeight: 500, fontSize: "0.9375rem" }}>{res.title}</div>
                         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{res.subtitle}</div>

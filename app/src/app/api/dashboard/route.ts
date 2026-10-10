@@ -103,7 +103,7 @@ Return ONLY a valid JSON array of objects with this format:
     if (insights.length === 0) {
       insights = [
         {
-          title: "🚀 Welcome to Velo",
+          title: "Welcome to Velo",
           body: "Start by creating a new project and adding tasks to your Kanban board.",
           action: "Get started"
         }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Role } from "@prisma/client";
+import { X } from "lucide-react";
 import { apiFetch } from "@/lib/client-api";
 import { ROLE_LABEL } from "@/lib/permissions";
 
@@ -120,7 +121,7 @@ export default function ProjectMembersModal({
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <h2 style={{ fontWeight: 700, fontSize: "1.25rem" }}>Project Team{team ? ` · ${team.project.name}` : ""}</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }}>✕</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }} aria-label="Close"><X size={16} /></button>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: "0.8125rem", marginBottom: 20 }}>
           {!team

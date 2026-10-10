@@ -8,6 +8,7 @@ import { ROLE_LABEL } from "@/lib/permissions";
 import NewProjectModal from "@/components/NewProjectModal";
 import { useCan, useCurrentUser } from "@/components/CurrentUserContext";
 import { Avatar, ROLE_BADGE } from "@/components/ProjectMembersModal";
+import { Clock } from "lucide-react";
 
 interface Project {
   id: string;
@@ -116,7 +117,7 @@ export default function ProjectsPage() {
                         )}
                       </div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                        ⏱ {p.dueDate ? `Due ${new Date(p.dueDate).toLocaleDateString()}` : "No due date"}
+                        <Clock size={12} /> {p.dueDate ? `Due ${new Date(p.dueDate).toLocaleDateString()}` : "No due date"}
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CalendarDays, CircleCheckBig, Sparkles } from "lucide-react";
 
 interface Sprint {
   id: string;
@@ -37,7 +38,7 @@ export default function SprintsPage() {
           <h2 style={{ fontWeight: 600, fontSize: "1.125rem" }}>Sprints</h2>
         </div>
         <button className="btn btn-primary btn-sm" style={{ background: "linear-gradient(90deg, var(--brand-500), var(--info))", border: "none" }}>
-          ⚡ Start AI Planning
+          <Sparkles size={15} /> Start AI Planning
         </button>
         <button className="btn btn-secondary btn-sm">+ New Sprint</button>
       </div>
@@ -84,8 +85,8 @@ export default function SprintsPage() {
             <div style={{ display: "grid", gap: 16 }}>
               {sprints.filter(s => s.status !== "ACTIVE").map(sprint => (
                 <div key={sprint.id} className="card card-hover" style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: sprint.status === "COMPLETED" ? "rgba(34, 197, 94, 0.1)" : "rgba(100, 116, 139, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
-                    {sprint.status === "COMPLETED" ? "✅" : "📅"}
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: sprint.status === "COMPLETED" ? "rgba(34, 197, 94, 0.1)" : "rgba(100, 116, 139, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: sprint.status === "COMPLETED" ? "var(--success)" : "var(--text-muted)" }}>
+                    {sprint.status === "COMPLETED" ? <CircleCheckBig size={22} strokeWidth={1.75} /> : <CalendarDays size={22} strokeWidth={1.75} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ fontWeight: 600, fontSize: "1rem" }}>{sprint.name}</h4>

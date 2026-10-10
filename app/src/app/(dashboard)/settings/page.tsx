@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { apiFetch } from "@/lib/client-api";
+import { Bell, Construction, CreditCard, Lock, Palette, User } from "lucide-react";
 
 type NotificationKey = "emailMentions" | "emailAssignments" | "pushReminders" | "marketing";
 
@@ -62,11 +63,11 @@ export default function SettingsPage() {
           {/* Sidebar Nav */}
           <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
             {[
-              { id: "profile", icon: "👤", label: "My Profile" },
-              { id: "notifications", icon: "🔔", label: "Notifications" },
-              { id: "security", icon: "🔒", label: "Security" },
-              { id: "appearance", icon: "✨", label: "Appearance" },
-              { id: "billing", icon: "💳", label: "Billing" },
+              { id: "profile", icon: User, label: "My Profile" },
+              { id: "notifications", icon: Bell, label: "Notifications" },
+              { id: "security", icon: Lock, label: "Security" },
+              { id: "appearance", icon: Palette, label: "Appearance" },
+              { id: "billing", icon: CreditCard, label: "Billing" },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -81,7 +82,7 @@ export default function SettingsPage() {
                 }}
                 className={activeTab !== tab.id ? "sidebar-item" : ""}
               >
-                <span>{tab.icon}</span>
+                <tab.icon size={17} strokeWidth={1.75} />
                 {tab.label}
               </button>
             ))}
@@ -239,7 +240,7 @@ export default function SettingsPage() {
             {/* PLACEHOLDER FOR OTHERS */}
             {["appearance", "billing"].includes(activeTab) && (
               <div className="card" style={{ animation: "fadeIn 0.2s ease", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, color: "var(--text-muted)" }}>
-                 <div style={{ fontSize: "3rem", marginBottom: 16 }}>🚧</div>
+                 <Construction size={40} strokeWidth={1.5} style={{ marginBottom: 16 }} />
                  <h3 style={{ fontWeight: 600, color: "var(--text-primary)" }}>Coming Soon</h3>
                  <p style={{ fontSize: "0.875rem", marginTop: 8 }}>This settings panel is under construction.</p>
               </div>

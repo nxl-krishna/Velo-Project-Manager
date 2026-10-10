@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  ArrowRight, Bell, Building2, ChartColumn, Gauge, KanbanSquare, Sparkles, ShieldCheck, Timer, Type,
+} from "lucide-react";
 import VeloLogo from "@/components/VeloLogo";
 
 export default function HomePage() {
@@ -37,7 +40,7 @@ export default function HomePage() {
           padding: "20px 48px", position: "relative", zIndex: 10,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <VeloLogo size={40} />
+            <VeloLogo size={28} variant="light" />
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
             <Link href="/auth/login" className="btn btn-ghost">Sign in</Link>
@@ -55,7 +58,7 @@ export default function HomePage() {
           position: "relative", zIndex: 10,
         }}>
           <div className="badge badge-brand" style={{ margin: "0 auto 24px", display: "inline-flex" }}>
-            ✨ AI-Powered Project Management
+            AI-Powered Project Management
           </div>
           <h1 style={{
             fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
@@ -81,7 +84,7 @@ export default function HomePage() {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/auth/register" className="btn btn-primary btn-lg">
-              Start for free →
+              Start for free <ArrowRight size={18} />
             </Link>
             <Link href="#features" className="btn btn-secondary btn-lg">
               See how it works
@@ -119,7 +122,12 @@ export default function HomePage() {
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 key={f.title} className="card card-hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ fontSize: "2rem" }}>{f.icon}</div>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "rgba(99,102,241,0.1)", color: "var(--brand-500)",
+                }}>
+                  <f.icon size={20} strokeWidth={1.75} />
+                </div>
                 <h3 style={{ fontWeight: 600, fontSize: "1.125rem" }}>{f.title}</h3>
                 <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", lineHeight: 1.6 }}>
                   {f.description}
@@ -160,7 +168,7 @@ export default function HomePage() {
           Join teams shipping 40% faster with AI-powered workflows
         </p>
         <Link href="/auth/register" className="btn btn-primary btn-lg">
-          Create your workspace →
+          Create your workspace <ArrowRight size={18} />
         </Link>
       </section>
 
@@ -174,7 +182,7 @@ export default function HomePage() {
         color: "var(--text-muted)",
         fontSize: "0.875rem",
       }}>
-        <span>© 2026 Velo. Built with ❤️ and Next.js</span>
+        <span>© 2026 Velo</span>
         <div style={{ display: "flex", gap: "24px" }}>
           <Link href="/api/health" style={{ color: "inherit", textDecoration: "none" }}>API Status</Link>
           <Link href="#" style={{ color: "inherit", textDecoration: "none" }}>Privacy</Link>
@@ -187,47 +195,47 @@ export default function HomePage() {
 
 const FEATURES = [
   {
-    icon: "🗂️",
+    icon: KanbanSquare,
     title: "Kanban Boards",
     description: "Drag-and-drop tasks across fully customizable columns with real-time sync across your team.",
   },
   {
-    icon: "🤖",
+    icon: Sparkles,
     title: "AI Task Intelligence",
     description: "Automatically summarize tasks, suggest the best assignee, and predict deadlines from historical data.",
   },
   {
-    icon: "⚡",
+    icon: Timer,
     title: "Sprint Planning",
     description: "Plan sprints with AI recommendations. Track velocity, burndown, and team workload in real time.",
   },
   {
-    icon: "🔒",
+    icon: ShieldCheck,
     title: "Role-Based Access",
     description: "Granular RBAC with Admins, Managers, and Members. Keep sensitive data secure across teams.",
   },
   {
-    icon: "📊",
+    icon: ChartColumn,
     title: "Analytics & Reports",
     description: "Sprint burndowns, workload views, and project progress dashboards. Make data-driven decisions.",
   },
   {
-    icon: "🔔",
+    icon: Bell,
     title: "Smart Notifications",
     description: "Get alerted on due dates, mentions, and status changes via in-app and email notifications.",
   },
   {
-    icon: "🧠",
+    icon: Type,
     title: "Natural Language Tasks",
     description: "Type a sentence, get a fully structured task. AI parses priority, assignees, and due dates automatically.",
   },
   {
-    icon: "🌐",
+    icon: Building2,
     title: "Multi-Organization",
     description: "Manage multiple companies or clients from a single account with isolated workspaces.",
   },
   {
-    icon: "📈",
+    icon: Gauge,
     title: "Prometheus Metrics",
     description: "Built-in /health and /metrics endpoints for production monitoring with your existing observability stack.",
   },

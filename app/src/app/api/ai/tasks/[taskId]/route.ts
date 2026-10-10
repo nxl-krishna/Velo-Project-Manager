@@ -43,7 +43,7 @@ Status: ${task.status}`;
       if (users.length === 0) return ok({ result: "No team members to suggest." });
       const members = users.map(u => u.name).join(", ");
       prompt = `Given the task "${task.title}" (Priority: ${task.priority}), suggest ONE person to assign it to from this team: [${members}]. 
-Write a 1-sentence explanation of why they are a good fit. Be creative but realistic. Format: "🎯 Suggested: [Name] - [Reason]"`;
+Write a 1-sentence explanation of why they are a good fit. Be creative but realistic. Do not use emojis. Format: "Suggested: [Name] - [Reason]"`;
     }
 
     const text = await generateText(prompt, 0.7);

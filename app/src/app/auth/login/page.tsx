@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Check } from "lucide-react";
 import VeloLogo from "@/components/VeloLogo";
 
 export default function LoginPage() {
@@ -59,7 +60,7 @@ export default function LoginPage() {
         <div style={{ width: "100%", maxWidth: 400 }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40, textDecoration: "none", color: "inherit" }}>
-            <VeloLogo size={48} />
+            <VeloLogo size={32} />
           </Link>
 
           <h1 style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: 8 }}>
@@ -127,7 +128,7 @@ export default function LoginPage() {
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <LoadingSpinner /> Signing in...
                 </span>
-              ) : "Sign in →"}
+              ) : <>Sign in <ArrowRight size={16} /></>}
             </button>
           </form>
 
@@ -172,13 +173,13 @@ export default function LoginPage() {
 
           <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 12 }}>
             {[
-              "✓ Smart task summarization",
-              "✓ Automatic assignee suggestions",
-              "✓ Deadline prediction from history",
-              "✓ Natural language task creation",
+              "Smart task summarization",
+              "Automatic assignee suggestions",
+              "Deadline prediction from history",
+              "Natural language task creation",
             ].map((item) => (
-              <div key={item} style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.9375rem" }}>
-                {item}
+              <div key={item} style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.9375rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Check size={16} style={{ color: "#34d399" }} /> {item}
               </div>
             ))}
           </div>

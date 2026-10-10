@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import VeloLogo from "@/components/VeloLogo";
 
 export default function RegisterPage() {
@@ -50,7 +51,7 @@ export default function RegisterPage() {
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-bg)", padding: 24 }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40, textDecoration: "none", color: "inherit", justifyContent: "center" }}>
-          <VeloLogo size={48} />
+          <VeloLogo size={32} />
         </Link>
 
         <div className="card" style={{ padding: "32px" }}>
@@ -90,7 +91,7 @@ export default function RegisterPage() {
             )}
 
             <button id="register-submit-btn" type="submit" className="btn btn-primary" disabled={loading} style={{ justifyContent: "center", padding: "12px 16px", marginTop: 4 }}>
-              {loading ? "Creating account..." : "Create account →"}
+              {loading ? "Creating account..." : <>Create account <ArrowRight size={16} /></>}
             </button>
           </form>
 

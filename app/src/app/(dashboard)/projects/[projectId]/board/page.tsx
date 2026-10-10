@@ -3,6 +3,7 @@
 import { useState, use, useEffect } from "react";
 import { apiFetch } from "@/lib/client-api";
 import ProjectMembersModal from "@/components/ProjectMembersModal";
+import { CalendarDays, Flame, ListTree, MessageSquare, Plus, Sparkles, UserCheck, Users, X } from "lucide-react";
 
 // Types
 interface Assignee {
@@ -187,7 +188,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
       {/* Topbar */}
       <div className="topbar">
         <div style={{ flex: 1 }}>
-          <h2 style={{ fontWeight: 600, fontSize: "1rem" }}>📁 {projectName ? projectName : "Project"} — Board</h2>
+          <h2 style={{ fontWeight: 600, fontSize: "1rem" }}>{projectName ? projectName : "Project"} — Board</h2>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
             <div className="progress-bar" style={{ width: 120 }}>
               <div className="progress-fill" style={{ width: `${progress}%` }} />
@@ -202,14 +203,14 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
             ))}
           </div>
           <button className="btn btn-secondary btn-sm" onClick={() => setShowTeam(true)} disabled={!!loadError}>
-            👥 Team
+            <Users size={15} /> Team
           </button>
           <button 
             className="btn btn-primary btn-sm" 
             id="add-task-btn"
             onClick={() => { if (columns.length > 0) { setNewTaskColId(columns[0].id); setNewTaskTitle(""); } }}
           >
-            + Add Task
+            <Plus size={15} /> Add Task
           </button>
         </div>
       </div>
@@ -268,7 +269,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
                         <span key={l} className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.6875rem" }}>{l}</span>
                       ))}
                       {task.priority === "CRITICAL" && (
-                        <span className="badge badge-red" style={{ marginLeft: "auto", fontSize: "0.6875rem" }}>🔥 Critical</span>
+                        <span className="badge badge-red" style={{ marginLeft: "auto", fontSize: "0.6875rem", display: "inline-flex", alignItems: "center", gap: 3 }}><Flame size={11} /> Critical</span>
                       )}
                     </div>
 
@@ -291,12 +292,12 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
 
                     {/* Footer */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", gap: 8, fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                        {task._count?.comments ? <span>💬 {task._count.comments}</span> : null}
-                        {task._count?.subTasks ? <span>⊞ {task._count.subTasks}</span> : null}
+                      <div style={{ display: "flex", gap: 8, fontSize: "0.75rem", color: "var(--text-muted)", alignItems: "center" }}>
+                        {task._count?.comments ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><MessageSquare size={12} /> {task._count.comments}</span> : null}
+                        {task._count?.subTasks ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><ListTree size={12} /> {task._count.subTasks}</span> : null}
                         {task.storyPoints ? <span className="badge badge-gray" style={{ padding: "1px 5px" }}>{task.storyPoints}pt</span> : null}
                         {task.dueDate && (
-                          <span style={{ color: "var(--danger)" }}>📅 {new Date(task.dueDate).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</span>
+                          <span style={{ color: "var(--danger)", display: "inline-flex", alignItems: "center", gap: 3 }}><CalendarDays size={12} /> {new Date(task.dueDate).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</span>
                         )}
                       </div>
 
@@ -330,7 +331,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
                             <span className="ai-thinking-dot" />
                             <span className="ai-thinking-dot" />
                           </span>
-                        ) : "🤖 Summarize"}
+                        ) : <><Sparkles size={12} /> Summarize</>}
                       </button>
                       <button
                         className="btn btn-ghost btn-sm"
@@ -339,7 +340,7 @@ export default function BoardPage({ params }: { params: Promise<{ projectId: str
                         disabled={aiLoading === task.id + "assign"}
                         id={`ai-assign-${task.id}`}
                       >
-                        {aiLoading === task.id + "assign" ? "..." : "🎯 Assign"}
+                        {aiLoading === task.id + "assign" ? "..." : <><UserCheck size={12} /> Assign</>}
                       </button>
                     </div>
                   </div>
@@ -442,7 +443,7 @@ function TaskDetailModal({ task, projectId, onClose, onUpdateTask }: { task: Tas
             <span className="badge badge-gray">{pc.label} priority</span>
             {task.storyPoints && <span className="badge badge-brand">{task.storyPoints} pts</span>}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }}>✕</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: "4px 8px" }} aria-label="Close"><X size={16} /></button>
         </div>
 
         <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 16 }}>{task.title}</h2>
