@@ -10,15 +10,12 @@ import {
   getClientIp,
 } from "@/lib/auth";
 import { error, validate, log } from "@/lib/api";
+import { passwordSchema } from "@/lib/password-policy";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
-  password: z
-    .string()
-    .min(8)
-    .regex(/[A-Z]/, "Must contain uppercase")
-    .regex(/[0-9]/, "Must contain a number"),
+  password: passwordSchema,
 });
 
 export async function POST(req: NextRequest) {

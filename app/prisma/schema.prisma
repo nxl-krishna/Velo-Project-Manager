@@ -63,8 +63,23 @@ model User {
   createdTasks    Task[]         @relation("TaskCreator")
   auditLogs       AuditLog[]
   refreshTokens   RefreshToken[]
+  passwordResets  PasswordResetToken[]
 
   @@index([email])
+}
+
+// Single-use password reset links. Only the SHA-256 hash of the emailed token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model RefreshToken {
