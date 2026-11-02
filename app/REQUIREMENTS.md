@@ -99,7 +99,7 @@
 ### Infrastructure & External Services
 *   **FC-10:** AI provider timeout → retry x2 with exponential backoff, return cached result or graceful degradation.
 *   **FC-11:** AI result poison/hallucination → results are suggestions only, user must confirm.
-*   **FC-12:** AI service down → main API continues without AI features (circuit breaker).
+*   **FC-12:** Gemini unavailable → main API continues without AI features.
 *   **FC-13:** Email job fails → retry 3x with exponential backoff, dead-letter queue.
 *   **FC-14:** Redis down → Bull falls back to in-memory queue (limited), alert fires.
 *   **FC-15:** *[Added]* **WebSocket Disconnect:** Frontend automatically attempts to reconnect with exponential backoff and polls the `/sync` API endpoint once reconnected to fetch missed state.

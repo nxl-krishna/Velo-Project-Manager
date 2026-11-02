@@ -22,16 +22,6 @@ export const emailQueue = new Queue("emails", {
   },
 });
 
-export const aiQueue = new Queue("ai-jobs", {
-  connection,
-  defaultJobOptions: {
-    attempts: 2,
-    backoff: { type: "exponential", delay: 5000 },
-    removeOnComplete: 50,
-    removeOnFail: 200,
-  },
-});
-
 export const notificationQueue = new Queue("notifications", {
   connection,
   defaultJobOptions: {
@@ -48,13 +38,6 @@ export interface EmailJobData {
   text?: string;
 }
 
-export interface AIJobData {
-  type: "summarize" | "suggest-assignee" | "predict-deadline" | "sprint-plan";
-  taskId: string;
-  projectId: string;
-  payload: Record<string, unknown>;
-}
-
 export interface NotificationJobData {
   userId: string;
   type: string;
@@ -66,11 +49,6 @@ export interface NotificationJobData {
 // ─── Queue jobs ───────────────────────────────────────────────
 export async function queueEmail(data: EmailJobData): Promise<void> {
   await emailQueue.add("send-email", data);
-}
-
-export async function queueAIJob(data: AIJobData): Promise<string> {
-  const job = await aiQueue.add(data.type, data);
-  return job.id ?? "";
 }
 
 export async function queueNotification(data: NotificationJobData): Promise<void> {

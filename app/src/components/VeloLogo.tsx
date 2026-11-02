@@ -1,7 +1,7 @@
 const ASSETS = {
-  wordmark: { src: "/velo-logo.png", ratio: 1328 / 463 },
-  light: { src: "/velo-logo-light.png", ratio: 1328 / 463 },
-  mark: { src: "/velo-mark.png", ratio: 595 / 455 },
+  wordmark: { src: "/brand/velo-logo.png", ratio: 1328 / 463 },
+  light: { src: "/brand/velo-logo-light.png", ratio: 1328 / 463 },
+  mark: { src: "/brand/velo-mark.png", ratio: 595 / 455 },
 } as const;
 
 export default function VeloLogo({

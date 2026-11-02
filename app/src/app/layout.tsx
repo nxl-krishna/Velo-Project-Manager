@@ -9,11 +9,19 @@ export const metadata: Metadata = {
   description:
     "Manage projects, sprints, and tasks with AI-powered insights. Kanban boards, smart task assignment, and deadline predictions.",
   keywords: ["project management", "kanban", "sprints", "AI", "team collaboration"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/brand/icon.png", type: "image/png" },
+    ],
+    apple: "/brand/apple-icon.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
     title: "Velo — Modern AI Workspace",
     description: "Manage projects with AI-powered insights",
+    images: [{ url: "/brand/opengraph-image.png" }],
   },
 };
 
