@@ -76,7 +76,6 @@
 *   **NFR-06:** All sensitive data encrypted at rest and in transit (TLS).
 *   **NFR-07:** GDPR-compliant: soft delete, data export endpoint.
 *   **NFR-08:** Structured JSON logging (level, timestamp, requestId, userId).
-*   **NFR-09:** Prometheus metrics exposed at `/metrics`.
 *   **NFR-10:** Database migrations versioned via Prisma.
 *   **NFR-11:** *[Added]* **File Storage:** Attachments must be stored in secure, scalable object storage (e.g., AWS S3) with presigned URLs for access.
 

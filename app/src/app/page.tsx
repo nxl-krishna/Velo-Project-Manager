@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowRight, Bell, Building2, ChartColumn, Gauge, KanbanSquare, Sparkles, ShieldCheck, Timer, Type,
+  ArrowRight, Bell, Building2, ChartColumn, KanbanSquare, Sparkles, ShieldCheck, Timer, Type,
 } from "lucide-react";
 import VeloLogo from "@/components/VeloLogo";
 
@@ -233,11 +233,6 @@ const FEATURES = [
     icon: Building2,
     title: "Multi-Organization",
     description: "Manage multiple companies or clients from a single account with isolated workspaces.",
-  },
-  {
-    icon: Gauge,
-    title: "Prometheus Metrics",
-    description: "Built-in /health and /metrics endpoints for production monitoring with your existing observability stack.",
   },
 ];
 
